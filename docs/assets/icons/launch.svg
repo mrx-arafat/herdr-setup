@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b85f7a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="t">
+<title id="t">Arrow keys with the down key pressed</title>
+<rect x="9" y="5.2" width="6" height="6" rx="1.6"/>
+<rect x="1.8" y="12.8" width="6" height="6" rx="1.6"/>
+<rect x="9" y="12.8" width="6" height="6" rx="1.6" fill="#b85f7a" fill-opacity=".38"/>
+<rect x="16.2" y="12.8" width="6" height="6" rx="1.6"/>
+</svg>

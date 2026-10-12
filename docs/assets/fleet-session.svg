@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="552" viewBox="0 0 760 552" role="img" aria-labelledby="title desc">
+<title id="title">A fleet session</title>
+<desc id="desc">fleet up 6 2 claude,codex starts six workers in two tabs, fleet send gives w1 and w2 a task each, fleet wait waits until both are done, and fleet close all --yes closes the workers.</desc>
+<style>.m{font-family:ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;font-size:15px;}</style>
+<clipPath id="win"><rect width="760" height="552" rx="14"/></clipPath>
+<g clip-path="url(#win)">
+<rect width="760" height="552" fill="#191724"/>
+<rect width="760" height="42" fill="#1f1d2e"/>
+<line x1="0" y1="41.5" x2="760" y2="41.5" stroke="#34304d"/>
+</g>
+<rect x="0.5" y="0.5" width="759" height="551" rx="13.5" fill="none" stroke="#34304d"/>
+<circle cx="20" cy="21" r="4.5" fill="#3a3651"/>
+<circle cx="34" cy="21" r="4.5" fill="#3a3651"/>
+<circle cx="48" cy="21" r="4.5" fill="#3a3651"/>
+<rect x="76" y="10" width="80" height="22" rx="6" fill="#26233a" stroke="#34304d"/>
+<text class="m" font-size="12" y="25.5" x="116" text-anchor="middle" font-weight="600" fill="#e0def4" style="font-size:12px">terminal</text>
+<text class="m" font-size="12" y="25.5" x="172" fill="#908caa" style="font-size:12px">workers-1</text>
+<text class="m" font-size="12" y="25.5" x="258" fill="#908caa" style="font-size:12px">workers-2</text>
+<text class="m" font-size="12" y="25.5" x="742" text-anchor="end" fill="#6e6a86" style="font-size:12px">my-app</text>
+<text class="m" x="28" y="76" xml:space="preserve"><tspan fill="#eb6f92" font-weight="700">$ </tspan><tspan fill="#ebbcba" font-weight="700">fleet</tspan><tspan fill="#e0def4"> up 6 2 claude,codex</tspan></text>
+<text class="m" x="28" y="99" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w1   </tspan><tspan fill="#f6c177" font-weight="700">claude  </tspan><tspan fill="#908caa">workers-1  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w1)</tspan></text>
+<text class="m" x="28" y="122" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w2   </tspan><tspan fill="#9ccfd8" font-weight="700">codex   </tspan><tspan fill="#908caa">workers-1  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w2)</tspan></text>
+<text class="m" x="28" y="145" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w3   </tspan><tspan fill="#f6c177" font-weight="700">claude  </tspan><tspan fill="#908caa">workers-1  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w3)</tspan></text>
+<text class="m" x="28" y="168" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w4   </tspan><tspan fill="#9ccfd8" font-weight="700">codex   </tspan><tspan fill="#908caa">workers-2  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w4)</tspan></text>
+<text class="m" x="28" y="191" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w5   </tspan><tspan fill="#f6c177" font-weight="700">claude  </tspan><tspan fill="#908caa">workers-2  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w5)</tspan></text>
+<text class="m" x="28" y="214" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w6   </tspan><tspan fill="#9ccfd8" font-weight="700">codex   </tspan><tspan fill="#908caa">workers-2  </tspan><tspan fill="#a6e3a1" font-weight="700">ready</tspan><tspan fill="#6e6a86">  (my-app-w6)</tspan></text>
+<text class="m" x="28" y="237" xml:space="preserve"><tspan fill="#a6a2c2">started 6 worker(s) in 2 tab(s). </tspan><tspan fill="#908caa">Next: fleet send w1 "&lt;task&gt;"</tspan></text>
+<text class="m" x="28" y="269" xml:space="preserve"><tspan fill="#eb6f92" font-weight="700">$ </tspan><tspan fill="#ebbcba" font-weight="700">fleet</tspan><tspan fill="#e0def4"> send w1 </tspan><tspan fill="#e0def4">"Add input validation to the signup form"</tspan></text>
+<text class="m" x="28" y="292" xml:space="preserve"><tspan fill="#a6e3a1" font-weight="700">sent</tspan><tspan fill="#e0def4">  w1 (</tspan><tspan fill="#f6c177" font-weight="700">claude</tspan><tspan fill="#e0def4">)</tspan></text>
+<text class="m" x="28" y="324" xml:space="preserve"><tspan fill="#eb6f92" font-weight="700">$ </tspan><tspan fill="#ebbcba" font-weight="700">fleet</tspan><tspan fill="#e0def4"> send w2 </tspan><tspan fill="#e0def4">"Find why the orders test is flaky"</tspan></text>
+<text class="m" x="28" y="347" xml:space="preserve"><tspan fill="#a6e3a1" font-weight="700">sent</tspan><tspan fill="#e0def4">  w2 (</tspan><tspan fill="#9ccfd8" font-weight="700">codex</tspan><tspan fill="#e0def4">)</tspan></text>
+<text class="m" x="28" y="379" xml:space="preserve"><tspan fill="#eb6f92" font-weight="700">$ </tspan><tspan fill="#ebbcba" font-weight="700">fleet</tspan><tspan fill="#e0def4"> wait w1,w2</tspan></text>
+<text class="m" x="28" y="402" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w1 </tspan><tspan fill="#a6e3a1" font-weight="700">done</tspan></text>
+<text class="m" x="28" y="425" xml:space="preserve"><tspan fill="#e0def4" font-weight="700">w2 </tspan><tspan fill="#a6e3a1" font-weight="700">done</tspan></text>
+<text class="m" x="28" y="457" xml:space="preserve"><tspan fill="#eb6f92" font-weight="700">$ </tspan><tspan fill="#ebbcba" font-weight="700">fleet</tspan><tspan fill="#e0def4"> close all --yes</tspan></text>
+<text class="m" x="28" y="480" xml:space="preserve"><tspan fill="#a6e3a1" font-weight="700">closed</tspan><tspan fill="#e0def4"> w1 (</tspan><tspan fill="#f6c177" font-weight="700">claude</tspan><tspan fill="#e0def4">)</tspan></text>
+<text class="m" x="28" y="503" xml:space="preserve"><tspan fill="#a6e3a1" font-weight="700">closed</tspan><tspan fill="#e0def4"> w2 (</tspan><tspan fill="#9ccfd8" font-weight="700">codex</tspan><tspan fill="#e0def4">)</tspan></text>
+<text class="m" x="28" y="526" xml:space="preserve"><tspan fill="#6e6a86" font-style="italic"># ... w3 to w6 close the same way</tspan></text>
+</svg>

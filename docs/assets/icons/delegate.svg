@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b85f7a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="t">
+<title id="t">Arrow to a target</title>
+<circle cx="15.5" cy="12" r="6" fill="#b85f7a" fill-opacity=".12"/>
+<circle cx="15.5" cy="12" r="1.9" fill="#b85f7a" stroke="none"/>
+<path d="M2.5 12h10"/>
+<path d="M9.6 8.9l3.1 3.1-3.1 3.1"/>
+</svg>
