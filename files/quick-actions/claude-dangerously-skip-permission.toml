@@ -1,0 +1,6 @@
+# Type "claude" in the Quick Actions picker. Opens a new tab in the current
+# workspace, in the directory you launched from, running claude with permission
+# prompts off. Quick actions have no TTY, so scripts/agent-tab.sh makes the pane.
+name = "Claude Dangerously Skip Permission"
+description = "new tab here"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/agent-tab.sh\" claude 'claude --dangerously-skip-permissions'"

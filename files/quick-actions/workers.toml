@@ -1,0 +1,58 @@
+# Type "workers" in the Quick Actions picker, then pick a layout.
+# Each worker is a pane labelled w1, w2, ... in the current workspace and folder.
+# Drive them from any pane with the fleet command: fleet ls, fleet send w2 "...", fleet close all.
+name = "Workers"
+description = "pick a layout"
+type = "select"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/fleet.sh\" up"
+
+[[options]]
+heading = "Claude"
+
+[[options]]
+label = "2 workers"
+value = "2 1 claude"
+description = "1 tab, side by side"
+
+[[options]]
+label = "3 workers"
+value = "3 1 claude"
+description = "1 tab, 2 columns"
+
+[[options]]
+label = "4 workers"
+value = "4 1 claude"
+description = "1 tab, 2x2"
+
+[[options]]
+label = "6 workers, one tab"
+value = "6 1 claude"
+description = "3x2 grid"
+
+[[options]]
+label = "6 workers, two tabs"
+value = "6 2 claude"
+description = "3 + 3"
+
+[[options]]
+label = "6 workers, three tabs"
+value = "6 3 claude"
+description = "2 + 2 + 2"
+
+[[options]]
+label = "8 workers, two tabs"
+value = "8 2 claude"
+description = "4 + 4, each 2x2"
+
+[[options]]
+heading = "Mixed"
+
+[[options]]
+label = "4 mixed"
+value = "4 1 claude,codex"
+description = "claude, codex, claude, codex"
+
+[[options]]
+label = "6 mixed, two tabs"
+value = "6 2 claude,codex,agy"
+description = "claude, codex, agy, repeated"

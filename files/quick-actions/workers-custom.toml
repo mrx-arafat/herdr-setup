@@ -1,0 +1,11 @@
+# Type "workers" then pick "Workers (custom)" to type your own layout:
+#   count [tabs] [agents]      for example: 6 2 claude,codex
+# agents: claude, codex, agy or shell, or a comma list that cycles.
+name = "Workers (custom)"
+description = "type a layout"
+type = "form"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/fleet.sh\" up"
+
+[form]
+prompt = "count, tabs, agents"
+placeholder = "6 2 claude,codex"

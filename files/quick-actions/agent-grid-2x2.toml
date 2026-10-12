@@ -1,0 +1,6 @@
+# Type "grid" in the Quick Actions picker. One tab with a balanced 2x2 grid:
+# claude (w1, top-left), codex (w2, top-right), agy (w3, bottom-left), shell (w4).
+# The panes are fleet workers, so fleet send / wait / read / clear / close work on them.
+name = "Agent Grid 2x2"
+description = "4 panes"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/fleet.sh\" up '4 1 claude,codex,agy,shell'"

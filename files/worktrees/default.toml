@@ -1,0 +1,12 @@
+# Auto-layout for every new git worktree that herdr creates or opens.
+# herdr-plus fires on the worktree.created and worktree.opened events and fills
+# the new workspace with these tabs. repo = "*" matches any repository that has
+# no layout of its own. Delete this file to turn the feature off.
+repo = "*"
+
+[[tabs]]
+name = "claude"
+command = "claude --dangerously-skip-permissions"
+
+[[tabs]]
+name = "terminal"

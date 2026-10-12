@@ -1,0 +1,40 @@
+#!/bin/sh
+# sync-agent-rules - copy ~/AGENTS.md (your personal rules) into the instruction files
+# that Codex and Agy/Gemini read, inside a marked block that this script owns.
+#
+# Codex reads ~/.codex/AGENTS.md, never ~/AGENTS.md. Agy and Gemini read ~/.gemini/GEMINI.md.
+# Claude Code already gets the rules: ~/.claude/CLAUDE.md is a link to ~/AGENTS.md.
+#
+# Run it again after you edit ~/AGENTS.md. It only rewrites the block between
+# PERSONAL-RULES:START and PERSONAL-RULES:END and leaves everything else alone
+# (including any block another tool manages in ~/.codex/AGENTS.md).
+set -eu
+
+src="$HOME/AGENTS.md"
+[ -s "$src" ] || { echo "sync-agent-rules: $src is missing or empty" >&2; exit 1; }
+
+sync_one() { # sync_one <target file>
+  dst="$1"
+  mkdir -p "$(dirname "$dst")"
+  [ -e "$dst" ] || : >"$dst"
+  tmp="$(mktemp "${TMPDIR:-/tmp}/sync-agent-rules.XXXXXX")"
+  # Drop any previous block, keep everything else byte for byte.
+  # Trailing blank lines are trimmed so repeated runs give identical bytes.
+  awk 'index($0, "PERSONAL-RULES:START") { skip = 1 }
+       !skip { line[++n] = $0 }
+       index($0, "PERSONAL-RULES:END") { skip = 0 }
+       END { while (n > 0 && line[n] == "") n--; for (i = 1; i <= n; i++) print line[i] }' "$dst" >"$tmp"
+  {
+    cat "$tmp"
+    [ -s "$tmp" ] && printf '\n'
+    printf '%s\n' "<!-- PERSONAL-RULES:START synced from ~/AGENTS.md by sync-agent-rules. Edit ~/AGENTS.md, then rerun sync-agent-rules. -->"
+    cat "$src"
+    printf '%s\n' "<!-- PERSONAL-RULES:END -->"
+  } >"$tmp.new"
+  cat "$tmp.new" >"$dst" # keep the file's inode and permissions
+  rm -f "$tmp" "$tmp.new"
+  echo "synced: $dst"
+}
+
+sync_one "$HOME/.codex/AGENTS.md"
+sync_one "$HOME/.gemini/GEMINI.md"

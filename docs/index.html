@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Herdr Setup Manual</title>
+<meta name="description" content="Interactive manual for the herdr setup: one-key agent launchers, a fleet command to run several AI coding agents at once, and a planner for your layout.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Crect x='3' y='3' width='9' height='9' rx='2' fill='%23f6c177'/%3E%3Crect x='14' y='3' width='9' height='9' rx='2' fill='%239ccfd8'/%3E%3Crect x='3' y='14' width='9' height='9' rx='2' fill='%23c4a7e7'/%3E%3Crect x='14' y='14' width='9' height='9' rx='2' fill='%23908caa'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: an app shell. Sticky top bar (brand, command palette, theme), a rail of views on the
+   left that becomes a scrolling strip on phones, and one view visible at a time.
+   Dark-first, tinted from the Rose Pine palette; agents carry their own colours. */
+[hidden] { display: none !important; }
+:root {
+  --bg: #191724;
+  --panel: #1f1d2e;
+  --raised: #26233a;
+  --line: #34304d;
+  --fg: #e0def4;
+  --muted: #a6a2c2;
+  --faint: #9490b0;
+  --accent: #ebbcba;
+  --accent-ink: #191724;
+  --ok: #9ccfd8;
+  --ok-bg: #1c3138;
+  --warn: #f6c177;
+  --warn-bg: #3a2f1a;
+  --danger: #eb6f92;
+  --danger-bg: #3b1d2b;
+  --term: #12101c;
+  --term-fg: #e0def4;
+  --term-line: #2c2843;
+  --c-claude: #f6c177;
+  --c-codex: #9ccfd8;
+  --c-agy: #c4a7e7;
+  --c-shell: #908caa;
+  /* agent colours inside the terminal preview, which stays dark in both themes */
+  --t-claude: #f6c177;
+  --t-codex: #9ccfd8;
+  --t-agy: #c4a7e7;
+  --t-shell: #a6a2c2;
+  --font-display: "Martian Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f4f2f8; --panel: #ffffff; --raised: #ece9f3; --line: #dcd7e7;
+    --fg: #26233a; --muted: #5d5878; --faint: #645f84;
+    --accent: #a3556e; --accent-ink: #ffffff;
+    --ok: #286983; --ok-bg: #dcecf1; --warn: #8f540a; --warn-bg: #f8ead2;
+    --danger: #b4325a; --danger-bg: #f7dfe6;
+    --term: #1f1d2e; --term-fg: #e0def4; --term-line: #393552;
+    --c-claude: #b06c12; --c-codex: #286983; --c-agy: #7a5fb0; --c-shell: #797593;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f4f2f8; --panel: #ffffff; --raised: #ece9f3; --line: #dcd7e7;
+  --fg: #26233a; --muted: #5d5878; --faint: #645f84;
+  --accent: #a3556e; --accent-ink: #ffffff;
+  --ok: #286983; --ok-bg: #dcecf1; --warn: #8f540a; --warn-bg: #f8ead2;
+  --danger: #b4325a; --danger-bg: #f7dfe6;
+  --term: #1f1d2e; --term-fg: #e0def4; --term-line: #393552;
+  --c-claude: #b06c12; --c-codex: #286983; --c-agy: #7a5fb0; --c-shell: #797593;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #191724; --panel: #1f1d2e; --raised: #26233a; --line: #34304d;
+  --fg: #e0def4; --muted: #a6a2c2; --faint: #9490b0;
+  --accent: #ebbcba; --accent-ink: #191724;
+  --ok: #9ccfd8; --ok-bg: #1c3138; --warn: #f6c177; --warn-bg: #3a2f1a;
+  --danger: #eb6f92; --danger-bg: #3b1d2b;
+  --term: #12101c; --term-fg: #e0def4; --term-line: #2c2843;
+  --c-claude: #f6c177; --c-codex: #9ccfd8; --c-agy: #c4a7e7; --c-shell: #908caa;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.2; }
+p { margin: 0; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+kbd {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif; font-weight: 500; font-size: 0.84em; line-height: 1.3; background: var(--raised); color: var(--fg);
+  border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; white-space: nowrap;
+}
+code.i { font-family: var(--font-mono); font-size: 0.86em; background: var(--raised); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- top bar ---------- */
+.top {
+  position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.brand { display: flex; align-items: center; gap: 10px; flex: none; text-decoration: none; color: var(--fg); line-height: 1.15; }
+.brand b { font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; letter-spacing: -0.02em; color: var(--fg); }
+.brand .txt > span { font-family: var(--font-mono); font-size: 0.7rem; color: var(--faint); }
+.search { position: relative; flex: 1 1 auto; max-width: 34rem; margin-inline: auto; min-width: 0; }
+.search input {
+  width: 100%; font: inherit; font-size: 0.92rem; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 9px; padding: 8px 40px 8px 34px;
+}
+.search > svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.search .hint { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.results {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 11px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35); max-height: min(60vh, 26rem); overflow-y: auto; padding: 6px;
+}
+.results button { width: 100%; text-align: left; background: none; border: 0; border-radius: 7px; padding: 8px 10px; cursor: pointer; display: grid; gap: 2px; }
+.results button[aria-selected="true"], .results button:hover { background: var(--raised); }
+.results .c { font-family: var(--font-mono); font-size: 0.82rem; overflow-wrap: anywhere; }
+.results .d { font-size: 0.8rem; color: var(--muted); }
+.results .none { padding: 10px; color: var(--muted); font-size: 0.88rem; }
+.theme { flex: none; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+@media (max-width: 40rem) { .brand .txt, .theme .lbl, .search .hint { display: none; } .search input { padding-right: 10px; } }
+
+/* ---------- shell ---------- */
+.app { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 88rem; margin-inline: auto; }
+nav.rail { position: sticky; top: 57px; z-index: 10; display: flex; gap: 4px; overflow-x: auto; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); scrollbar-width: none; }
+nav.rail button {
+  flex: none; display: flex; align-items: center; gap: 9px; background: none; border: 1px solid transparent; border-radius: 9px;
+  padding: 7px 11px; color: var(--muted); font-weight: 500; font-size: 0.9rem; cursor: pointer; white-space: nowrap; text-align: left;
+}
+nav.rail button svg { flex: none; }
+nav.rail button[aria-selected="true"] { color: var(--fg); background: var(--panel); border-color: var(--line); }
+nav.rail button:hover { color: var(--fg); }
+.rail-foot { display: none; }
+@media (max-width: 63.99rem) { nav.rail { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); } }
+main { min-width: 0; padding: 22px 16px 60px; }
+@media (min-width: 64rem) {
+  .app { grid-template-columns: 15rem minmax(0, 1fr); }
+  nav.rail { flex-direction: column; overflow: visible; border-bottom: 0; border-right: 1px solid var(--line); height: calc(100vh - 57px); padding: 18px 12px; }
+  nav.rail button { width: 100%; }
+  .rail-foot { display: grid; gap: 7px; margin-top: auto; padding: 14px 10px 4px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+  .rail-foot .row { display: flex; justify-content: space-between; gap: 8px; }
+  .rail-foot .v { font-family: var(--font-mono); color: var(--fg); }
+  main { padding: 28px 32px 60px; }
+}
+
+.view { display: grid; gap: 18px; max-width: 74rem; }
+.view-head { display: grid; gap: 6px; }
+.kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.view-head h1 { font-family: var(--font-display); font-size: clamp(1.4rem, 3.2vw, 1.9rem); font-weight: 600; letter-spacing: -0.035em; }
+.lede { color: var(--muted); max-width: 66ch; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; align-content: start; }
+.card > h2, .head-row h2 { font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; letter-spacing: -0.01em; }
+.head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; min-height: 1.5rem; }
+.card > h2 { min-height: 1.5rem; display: flex; align-items: center; }
+.label { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.grid2 { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 62rem) { .grid2 { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); } .grid2.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+
+/* ---------- controls ---------- */
+.field { display: grid; gap: 8px; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper .num { font-family: var(--font-display); font-size: 2.6rem; font-weight: 600; letter-spacing: -0.05em; min-width: 2.4ch; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
+.iconbtn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); display: grid; place-items: center; cursor: pointer; font-size: 1.15rem; line-height: 1; flex: none; }
+.iconbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 11px; font-size: 0.82rem; cursor: pointer; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); width: fit-content; max-width: 100%; }
+.seg button { border: 0; background: none; padding: 7px 15px; cursor: pointer; font-size: 0.88rem; font-variant-numeric: tabular-nums; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.seg button:disabled { opacity: 0.35; cursor: not-allowed; }
+.agents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.agentbtn { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 11px; cursor: pointer; text-align: left; color: var(--muted); }
+.agentbtn .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; opacity: 0.7; }
+.agentbtn small { display: block; color: var(--faint); font-size: 0.74rem; }
+.agentbtn[aria-pressed="true"] { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 12%, var(--bg)); color: var(--fg); }
+.agentbtn[aria-pressed="true"] .dot { opacity: 1; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+.toggle .t { display: grid; gap: 2px; }
+.toggle small { color: var(--faint); font-size: 0.78rem; }
+.switch { position: relative; width: 40px; height: 22px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); transition: background 0.15s; }
+.switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform 0.15s, background 0.15s; }
+.switch input:checked + i { background: var(--accent); border-color: var(--accent); }
+.switch input:checked + i::after { transform: translateX(18px); background: var(--accent-ink); }
+.switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+.text { font: inherit; font-size: 0.9rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; width: 100%; min-width: 0; }
+textarea.text { resize: vertical; min-height: 4.2rem; line-height: 1.45; }
+
+/* ---------- preview ---------- */
+.card.preview { grid-template-rows: auto 1fr auto; }
+.windows { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); align-items: stretch; }
+.win { background: var(--term); border: 1px solid var(--term-line); border-radius: 12px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; min-height: 14rem; }
+.win-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--term-line); color: var(--term-fg); font-family: var(--font-mono); font-size: 0.75rem; }
+.win-bar .lights { display: flex; gap: 5px; }
+.win-bar .lights i { width: 8px; height: 8px; border-radius: 50%; background: var(--term-line); }
+.win-bar .tab { background: color-mix(in srgb, var(--term-fg) 10%, transparent); border-radius: 6px; padding: 1px 8px; }
+.win-bar .n { margin-left: auto; opacity: 0.6; }
+.panes { display: flex; gap: 4px; padding: 4px; min-height: 0; }
+.col { flex: 1 1 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cell {
+  flex: 1 1 0; min-height: 2.9rem; border-radius: 7px; padding: 7px 9px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+  background: color-mix(in srgb, var(--ac) 13%, var(--term)); border: 1px solid color-mix(in srgb, var(--ac) 42%, var(--term)); color: var(--term-fg); min-width: 0;
+}
+.cell .w { font-family: var(--font-display); font-size: 0.86rem; font-weight: 600; }
+.cell .k { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ac); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { font-size: 0.8rem; border-radius: 999px; padding: 3px 10px; background: var(--raised); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.pill b { font-weight: 600; }
+
+/* ---------- commands ---------- */
+.cmd { background: var(--term); color: var(--term-fg); border: 1px solid var(--term-line); border-radius: 10px; display: flex; align-items: flex-start; min-width: 0; }
+.cmd pre { margin: 0; padding: 11px 6px 11px 13px; flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cmd pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { flex: none; margin: 7px; font-size: 0.76rem; font-weight: 500; color: var(--term-fg); background: color-mix(in srgb, var(--term-fg) 8%, transparent); border: 1px solid color-mix(in srgb, var(--term-fg) 28%, transparent); border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+.copy:hover { background: color-mix(in srgb, var(--term-fg) 16%, transparent); border-color: var(--accent); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button { flex: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 10px; margin-bottom: -1px; cursor: pointer; color: var(--muted); font-size: 0.88rem; font-weight: 500; }
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.pane { display: grid; gap: 10px; }
+.note { font-size: 0.86rem; color: var(--muted); }
+.note.warn { color: var(--warn); }
+.keypath { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.92rem; }
+.keypath .then { color: var(--faint); font-size: 0.82rem; }
+
+/* ---------- delegate ---------- */
+.tasks { display: grid; gap: 10px; }
+.task { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--raised); border-radius: 9px; padding: 7px 13px; cursor: pointer; font-size: 0.86rem; font-weight: 500; }
+.inline { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--muted); flex-wrap: wrap; }
+.inline input { width: 5.5rem; }
+@media (max-width: 34rem) { .task { grid-template-columns: minmax(0, 1fr) auto; } .task select { grid-column: 1 / -1; } }
+
+/* ---------- actions ---------- */
+.actions { columns: 2 22rem; column-gap: 14px; }
+.actions > .card { break-inside: avoid; margin-bottom: 14px; }
+.act { box-shadow: inset 0 3px 0 var(--tone, var(--line)); }
+.act.danger { --tone: var(--danger); }
+.act.ok { --tone: var(--ok); }
+.act.warnc { --tone: var(--warn); }
+.act h3 { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.act p { color: var(--muted); font-size: 0.9rem; }
+.badge { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; background: var(--raised); color: var(--muted); font-weight: 500; }
+.badge.danger { background: var(--danger-bg); color: var(--danger); }
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); }
+.check { display: grid; }
+.check label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.check label:last-child { border-bottom: 0; }
+.check input { margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px; }
+.check .c { font-family: var(--font-mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+.check .d { font-size: 0.82rem; color: var(--muted); }
+.check input:checked + div .c { color: var(--faint); text-decoration: line-through; }
+
+/* ---------- tables, lists ---------- */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th { text-align: left; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); font-weight: 500; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.m { font-family: var(--font-mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+td.nw { white-space: nowrap; width: 1%; }
+.act td:first-child, td.m:first-child { white-space: nowrap; }
+.rec td:last-child { width: 1%; }
+.rec tbody tr:hover td { background: var(--raised); }
+.groups { columns: 3 19rem; column-gap: 14px; }
+.groups > .card { break-inside: avoid; margin-bottom: 14px; }
+.stack2 { columns: 2 24rem; column-gap: 18px; }
+.stack2 > .card { break-inside: avoid; margin-bottom: 18px; }
+ul.rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+ul.rules li { font-size: 0.9rem; padding-left: 15px; position: relative; }
+ul.rules li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 2px; background: var(--tone, var(--accent)); }
+ol.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 12px; }
+ol.steps li { counter-increment: step; position: relative; padding-left: 34px; font-size: 0.9rem; min-height: 22px; }
+ol.steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 7px; background: var(--raised);
+  border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--accent);
+}
+.status { display: inline-block; font-size: 0.74rem; font-weight: 600; border-radius: 5px; padding: 1px 8px; white-space: nowrap; }
+.status.pass { background: var(--ok-bg); color: var(--ok); }
+.status.open { background: var(--warn-bg); color: var(--warn); }
+.callout { border-radius: 11px; padding: 13px 15px; border: 1px solid var(--line); background: var(--raised); font-size: 0.9rem; display: block; }
+.callout.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.callout.ok { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.callout strong { font-weight: 600; display: block; margin-bottom: 6px; }
+.linklist { display: grid; gap: 9px; }
+.linklist a { overflow-wrap: anywhere; }
+.hide { display: none !important; }
+.foot { max-width: 74rem; margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.82rem; color: var(--muted); display: grid; gap: 4px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(12px);
+  background: var(--fg); color: var(--bg); border-radius: 10px; padding: 9px 14px; font-size: 0.86rem; font-weight: 500;
+  opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s; max-width: calc(100vw - 32px); z-index: 50;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#start" aria-label="herdr setup manual, go to Start here">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="none" stroke="currentColor" stroke-opacity=".3"/><rect x="5" y="5" width="7" height="7" rx="2" fill="var(--c-claude)"/><rect x="14" y="5" width="7" height="7" rx="2" fill="var(--c-codex)"/><rect x="5" y="14" width="7" height="7" rx="2" fill="var(--c-agy)"/><rect x="14" y="14" width="7" height="7" rx="2" fill="var(--c-shell)" fill-opacity=".6"/></svg>
+    <span class="txt"><b>herdr</b><br><span>setup manual</span></span>
+  </a>
+  <div class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" autocomplete="off" placeholder="Find a command to copy" aria-label="Find a command and copy it" aria-controls="results" aria-expanded="false" role="combobox">
+    <span class="hint"><kbd>/</kbd></span>
+    <div class="results" id="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme" id="theme" type="button" aria-label="Change theme"><span id="theme-icon" aria-hidden="true">&#9680;</span><span class="lbl" id="theme-label">System</span></button>
+</header>
+
+<div class="app">
+  <nav class="rail" role="tablist" aria-label="Views">
+    <button role="tab" type="button" data-view="start" aria-controls="v-start" aria-selected="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></svg>Start here</button>
+    <button role="tab" type="button" data-view="planner" aria-controls="v-planner" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Fleet planner</button>
+    <button role="tab" type="button" data-view="delegate" aria-controls="v-delegate" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/><path d="M21 4v16"/></svg>Delegate</button>
+    <button role="tab" type="button" data-view="manage" aria-controls="v-manage" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Manage &amp; clean</button>
+    <button role="tab" type="button" data-view="launch" aria-controls="v-launch" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m7 4 13 8-13 8z"/></svg>Launch &amp; projects</button>
+    <button role="tab" type="button" data-view="keys" aria-controls="v-keys" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>Keys &amp; shell</button>
+    <button role="tab" type="button" data-view="rules" aria-controls="v-rules" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.4 8 8 9 4.6-1 8-4.6 8-9V6z"/></svg>Working agreement</button>
+    <button role="tab" type="button" data-view="health" aria-controls="v-health" aria-selected="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>Tested</button>
+    <div class="rail-foot" role="presentation">
+      <div class="row"><span>Needs</span><span class="v">herdr 0.7.0+</span></div>
+      <div class="row"><span>Tested on</span><span class="v">0.9.3</span></div>
+      <div class="row"><span>Launchers</span><span class="v">6</span></div>
+      <div class="row"><span>Per fleet up</span><span class="v">12 workers</span></div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ================= START ================= -->
+    <section class="view" id="v-start" role="tabpanel" aria-label="Start here">
+      <div class="view-head">
+        <p class="kicker">Start here</p>
+        <h1>One command, a herd of agents</h1>
+        <p class="lede">One command sets up herdr with one-key agent launchers and a <code class="i">fleet</code> command to run and drive several AI coding agents at once. This page shows what it installs, how to use it, and how to plan a fleet before you start.</p>
+      </div>
+
+      <div class="card">
+        <div class="head-row"><h2>Install</h2><span class="note">macOS or Linux. Safe to run again.</span></div>
+        <div class="tabs" role="tablist" aria-label="Install variant">
+          <button role="tab" type="button" aria-selected="true" data-inst="one">One-liner</button>
+          <button role="tab" type="button" aria-selected="false" data-inst="yes">Non-interactive</button>
+          <button role="tab" type="button" aria-selected="false" data-inst="read">Read it first</button>
+        </div>
+        <div class="pane" data-instpane="one">
+          <div class="cmd"><pre id="s-install">curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh</pre><button class="copy" type="button" data-copy="s-install">Copy</button></div>
+          <p class="note">Downloads <code class="i">install.sh</code> and runs it. It asks before it installs the herdr-plus plugin. Installing a plugin clones a GitHub repository and runs its build script, so read what you install.</p>
+        </div>
+        <div class="pane" data-instpane="yes" hidden>
+          <div class="cmd"><pre id="s-yes">curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh -s -- --yes</pre><button class="copy" type="button" data-copy="s-yes">Copy</button></div>
+          <p class="note"><code class="i">--yes</code> skips the plugin question. Use it in scripts, or when you already know you want herdr-plus.</p>
+        </div>
+        <div class="pane" data-instpane="read" hidden>
+          <div class="cmd"><pre id="s-read">curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh -o install.sh
+less install.sh
+sh install.sh</pre><button class="copy" type="button" data-copy="s-read">Copy</button></div>
+          <p class="note">Download, read, then run. Nothing is installed until you run the last line.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="callout warn"><strong>The launchers turn permission prompts off.</strong>
+          They start agents with their permission prompts or sandbox off, so an agent can edit files and run commands without asking.
+          Codex's own help calls its flag &ldquo;EXTREMELY DANGEROUS. Intended solely for running in environments that are externally sandboxed.&rdquo;
+          Use them in git repos with a clean working tree, so you can review or discard every change.
+          To keep the prompts, set <code class="i">FLEET_CLAUDE_ARGS=""</code> (and <code class="i">FLEET_CODEX_ARGS</code>, <code class="i">FLEET_AGY_ARGS</code>) when you run <code class="i">fleet up</code>.</div>
+        <div class="cmd"><pre id="s-safe">FLEET_CLAUDE_ARGS="" FLEET_CODEX_ARGS="" FLEET_AGY_ARGS="" fleet up 4 1 claude,codex,agy</pre><button class="copy" type="button" data-copy="s-safe">Copy</button></div>
+        <p class="note">Quick Actions always start agents with their checks off. To keep the prompts, run <code class="i">fleet up</code> from a terminal, as above. The planner builds this command for you.</p>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card">
+          <h2>Requirements</h2>
+          <div class="scroll"><table>
+            <tbody>
+              <tr><td class="nw">System</td><td>macOS or Linux</td></tr>
+              <tr><td class="nw">herdr</td><td>0.7.0 or newer. Install: <code class="i">curl -fsSL https://herdr.dev/install.sh | sh</code> or <code class="i">brew install herdr</code></td></tr>
+              <tr><td class="nw">jq</td><td><code class="i">brew install jq</code> or <code class="i">sudo apt install jq</code></td></tr>
+              <tr><td class="nw">curl</td><td>Downloads the scripts</td></tr>
+              <tr><td class="nw">An agent</td><td>At least one CLI, signed in: <code class="i">claude</code>, <code class="i">codex</code> or <code class="i">agy</code></td></tr>
+            </tbody>
+          </table></div>
+          <p class="note">Check what you have:</p>
+          <div class="cmd"><pre id="s-check">for t in herdr claude codex agy jq curl; do printf '%-8s ' "$t"; command -v "$t" || echo "not found"; done</pre><button class="copy" type="button" data-copy="s-check">Copy</button></div>
+          <p class="note">herdr, jq and curl are required. Of the three agents, one is enough.</p>
+        </div>
+        <div class="card">
+          <h2>What the installer does</h2>
+          <ol class="steps">
+            <li>Checks that herdr 0.7.0 or newer, jq and curl are installed.</li>
+            <li>Installs the herdr-plus plugin (<code class="i">herdr plugin install cloudmanic/herdr-plus</code>) after asking you. It asks on your terminal even when piped, and <code class="i">--yes</code> skips the question.</li>
+            <li>Downloads two scripts (<code class="i">agent-tab.sh</code>, <code class="i">fleet.sh</code>) and six Quick Actions from this repo into <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/</code>. It never overwrites a file that exists.</li>
+            <li>Links the <code class="i">fleet</code> command into <code class="i">~/.local/bin</code> when that folder is on your PATH, otherwise prints an alias line. It never replaces an existing <code class="i">fleet</code> command.</li>
+            <li>Binds <code class="i">prefix+up</code> to Projects and <code class="i">prefix+down</code> to Quick Actions in <code class="i">~/.config/herdr/config.toml</code>, after a timestamped backup. It skips keys you already use.</li>
+            <li>Reloads herdr and runs <code class="i">herdr config check</code>.</li>
+          </ol>
+          <p class="note">Safe to run again.</p>
+        </div>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card">
+          <h2>Try it in 30 seconds</h2>
+          <ol class="steps">
+            <li>Open herdr in a project folder: <code class="i">cd</code> into it and run <code class="i">herdr</code>.</li>
+            <li>Press <kbd>ctrl</kbd>+<kbd>b</kbd> then <kbd>&darr;</kbd>. Type <code class="i">claude</code> and press <kbd>Enter</kbd>. A new tab runs Claude with prompts off.</li>
+            <li>Press <kbd>ctrl</kbd>+<kbd>b</kbd> then <kbd>&darr;</kbd> again. Type <code class="i">workers</code>, pick <code class="i">Workers</code>, then <code class="i">2 workers</code>. A tab named <code class="i">workers</code> opens with two Claude panes, <code class="i">w1</code> and <code class="i">w2</code>.</li>
+            <li>In another pane run <code class="i">fleet ls</code> to see the workers.</li>
+          </ol>
+          <div class="btnrow"><button class="chip" type="button" data-goto="planner">Plan a bigger fleet</button><button class="chip" type="button" data-goto="launch">All launchers</button></div>
+        </div>
+        <div class="card">
+          <h2>Read more</h2>
+          <div class="linklist">
+            <div><span class="label">Repository</span><br><a href="https://github.com/mrx-arafat/herdr-setup" target="_blank" rel="noopener noreferrer">https://github.com/mrx-arafat/herdr-setup</a></div>
+            <div><span class="label">Full guide</span><br><a href="https://github.com/mrx-arafat/herdr-setup/blob/main/docs/GUIDE.md" target="_blank" rel="noopener noreferrer">https://github.com/mrx-arafat/herdr-setup/blob/main/docs/GUIDE.md</a></div>
+          </div>
+          <p class="note">Use the search box above (press <kbd>/</kbd>) to find any command on this page and copy it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PLANNER ================= -->
+    <section class="view" id="v-planner" role="tabpanel" aria-label="Fleet planner" hidden>
+      <div class="view-head">
+        <p class="kicker">Fleet planner</p>
+        <h1>Plan your workers</h1>
+        <p class="lede">Pick a count, how many tabs to spread them over, and which agents. The preview is the exact grid <code class="i">fleet</code> builds, numbered the way you address them.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card" aria-label="Fleet settings">
+          <div class="field">
+            <span class="label" id="lbl-count">Workers</span>
+            <div class="stepper">
+              <button class="iconbtn" id="dec" type="button" aria-label="One worker fewer">&minus;</button>
+              <output class="num" id="count" aria-labelledby="lbl-count">6</output>
+              <button class="iconbtn" id="inc" type="button" aria-label="One worker more">+</button>
+            </div>
+            <div class="chips" id="quick" aria-label="Quick counts"></div>
+          </div>
+          <div class="field">
+            <span class="label">Tabs</span>
+            <div class="seg" id="tabs" role="group" aria-label="Number of tabs"></div>
+          </div>
+          <div class="field">
+            <span class="label">Agents, cycled in this order</span>
+            <div class="agents" id="agents" role="group" aria-label="Agents"></div>
+          </div>
+          <label class="toggle" for="safe">
+            <span class="t"><span>Keep safety prompts</span><small>Off means agents start with their checks off</small></span>
+            <span class="switch"><input type="checkbox" id="safe"><i></i></span>
+          </label>
+          <div class="field">
+            <label class="label" for="wsname">Workspace name</label>
+            <input class="text" id="wsname" value="my-app" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="card preview" aria-label="Layout preview">
+          <div class="head-row"><h2>Preview</h2><div class="legend" id="legend"></div></div>
+          <div class="windows" id="windows"></div>
+          <div class="summary" id="summary"></div>
+        </div>
+      </div>
+
+      <div class="card" aria-label="Run it">
+        <div class="head-row"><h2>Run it</h2><span class="note" id="names"></span></div>
+        <div class="tabs" role="tablist" aria-label="How to run">
+          <button role="tab" type="button" aria-selected="true" data-run="term">Terminal</button>
+          <button role="tab" type="button" aria-selected="false" data-run="picker">Quick Actions</button>
+          <button role="tab" type="button" aria-selected="false" data-run="next">Then</button>
+        </div>
+        <div class="pane" data-runpane="term">
+          <div class="cmd"><pre id="runcmd"></pre><button class="copy" type="button" data-copy="runcmd">Copy</button></div>
+          <p class="note">Run it in any pane of the workspace. It returns once every agent is ready for a task.</p>
+        </div>
+        <div class="pane" data-runpane="picker" hidden>
+          <div class="keypath" id="pickpath"></div>
+          <p class="note" id="picknote"></p>
+        </div>
+        <div class="pane" data-runpane="next" hidden>
+          <div class="cmd"><pre id="nextcmd">fleet ls
+fleet send w1 'your first task'
+fleet wait all
+fleet read w1 120</pre><button class="copy" type="button" data-copy="nextcmd">Copy</button></div>
+          <p class="note">For a whole task list, use <button class="chip" type="button" data-goto="delegate">Delegate</button></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= DELEGATE ================= -->
+    <section class="view" id="v-delegate" role="tabpanel" aria-label="Delegate" hidden>
+      <div class="view-head">
+        <p class="kicker">Delegate</p>
+        <h1>Hand out the work</h1>
+        <p class="lede">One task per worker. You get the fleet commands to paste, or a prompt that lets the Claude in your <code class="i">claude</code> tab run the whole round and report back.</p>
+      </div>
+      <div class="grid2 even">
+        <div class="card">
+          <div class="head-row"><h2>Tasks</h2><span class="note" id="tcount"></span></div>
+          <div class="tasks" id="tasks"></div>
+          <div class="btnrow">
+            <button class="btn" id="addtask" type="button">Add task</button>
+            <button class="btn" id="sample" type="button">Load example</button>
+            <button class="btn" id="cleartasks" type="button">Clear</button>
+          </div>
+          <label class="toggle" for="dwait">
+            <span class="t"><span>Wait for results</span><small>Adds fleet wait and fleet read</small></span>
+            <span class="switch"><input type="checkbox" id="dwait" checked><i></i></span>
+          </label>
+          <label class="inline" for="dlines">Read <input class="text" type="number" id="dlines" min="10" max="2000" step="10" value="120"> lines per worker</label>
+        </div>
+        <div class="card">
+          <div class="tabs" role="tablist" aria-label="Output">
+            <button role="tab" type="button" aria-selected="true" data-out="script">Commands</button>
+            <button role="tab" type="button" aria-selected="false" data-out="prompt">Prompt for your main agent</button>
+          </div>
+          <div class="pane" data-outpane="script">
+            <div class="cmd"><pre id="dscript"></pre><button class="copy" type="button" data-copy="dscript">Copy</button></div>
+            <p class="note">Paste into any pane of the workspace, for example the <code class="i">terminal</code> tab.</p>
+          </div>
+          <div class="pane" data-outpane="prompt" hidden>
+            <div class="cmd"><pre class="wrap" id="dprompt"></pre><button class="copy" type="button" data-copy="dprompt">Copy</button></div>
+            <p class="note">It tells the agent to leave every change for your review.</p>
+          </div>
+        </div>
+      </div>
+      <div class="grid2 even">
+        <div class="card">
+          <h2>Targets</h2>
+          <div class="scroll"><table>
+            <thead><tr><th>Write</th><th>Means</th></tr></thead>
+            <tbody>
+              <tr><td class="m">w3 or 3</td><td>One worker</td></tr>
+              <tr><td class="m">w1,w4</td><td>Several workers</td></tr>
+              <tr><td class="m">all</td><td>Every worker in this workspace</td></tr>
+              <tr><td class="m">idle</td><td>Workers that are idle or done right now</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <h2>Good to know</h2>
+          <ul class="rules">
+            <li>Workers in one tab share a folder. Give them different files, or give each task its own worktree.</li>
+            <li><code class="i">fleet send --wait all '...'</code> sends and blocks until every worker finishes.</li>
+            <li>For a long answer, ask the worker to write a file and reply with its path.</li>
+            <li>Named agents work with plain herdr: <code class="i">herdr agent prompt my-app-w1 '...' --wait</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MANAGE ================= -->
+    <section class="view" id="v-manage" role="tabpanel" aria-label="Manage and clean" hidden>
+      <div class="view-head">
+        <p class="kicker">Manage &amp; clean</p>
+        <h1>Keep the workspace tidy</h1>
+        <p class="lede">See what is running, reset a worker's memory, close what you are done with, and keep the setup healthy.</p>
+      </div>
+      <div class="actions">
+        <div class="card act ok">
+          <h3>See what is running <span class="badge ok">safe</span></h3>
+          <p>Workers with agent, status, tab and pane. The sidebar shows the same states for every workspace.</p>
+          <div class="cmd"><pre id="m-ls">fleet ls
+fleet focus w3
+herdr agent list</pre><button class="copy" type="button" data-copy="m-ls">Copy</button></div>
+          <p class="note">Jump anywhere: <kbd>ctrl</kbd>+<kbd>b</kbd> <kbd>g</kbd>, or <kbd>&#8984;P</kbd> in the Herdr app.</p>
+        </div>
+        <div class="card act warnc">
+          <h3>Reset memory <span class="badge warn">loses context</span></h3>
+          <p>Claude and Codex workers get <code class="i">/clear</code>, a fresh chat in the same session. Claude's counter then reads <code class="i">0 tokens</code>. Old text stays in the scrollback.</p>
+          <div class="cmd"><pre id="m-clear">fleet clear w2
+fleet clear all</pre><button class="copy" type="button" data-copy="m-clear">Copy</button></div>
+          <p class="note">Agy has no verified clear command. Close and relaunch it instead.</p>
+        </div>
+        <div class="card act danger">
+          <h3>Close workers <span class="badge danger">ends sessions</span></h3>
+          <p>Closing a worker ends its agent. When a tab's last pane closes, the tab goes too. <code class="i">all</code> asks first.</p>
+          <div class="cmd"><pre id="m-close">fleet close w3
+fleet close all
+fleet close all --yes</pre><button class="copy" type="button" data-copy="m-close">Copy</button></div>
+        </div>
+        <div class="card act danger">
+          <h3>Close bigger things <span class="badge danger">ends sessions</span></h3>
+          <div class="scroll"><table>
+            <tbody>
+              <tr><td>One pane</td><td class="nw"><kbd>ctrl</kbd>+<kbd>b</kbd> <kbd>x</kbd> or <kbd>&#8984;W</kbd></td></tr>
+              <tr><td>A workspace</td><td class="nw"><kbd>ctrl</kbd>+<kbd>b</kbd> <kbd>shift</kbd>+<kbd>d</kbd></td></tr>
+              <tr><td>A worktree</td><td class="m">herdr worktree remove --workspace &lt;id&gt;</td></tr>
+              <tr><td>Everything</td><td class="m">herdr server stop</td></tr>
+            </tbody>
+          </table></div>
+          <p class="note"><kbd>ctrl</kbd>+<kbd>b</kbd> <kbd>q</kbd> only detaches. Everything keeps running.</p>
+        </div>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card">
+          <div class="head-row"><h2>Weekly maintenance</h2><span class="note" id="mstamp"></span></div>
+          <div class="check" id="mcheck"></div>
+          <div class="btnrow"><button class="btn" id="mreset" type="button">Start a new round</button></div>
+        </div>
+        <div class="card">
+          <h2>Parallel work without collisions</h2>
+          <p class="note">One worktree per task: a separate checkout on its own branch, opened as its own workspace with a <code class="i">claude</code> tab ready.</p>
+          <div class="cmd"><pre id="m-wt">cd ~/code/my-app
+for task in login-form rate-limit audit-log; do
+  herdr worktree create --cwd "$PWD" --branch "feat/$task" --no-focus
+done
+herdr worktree list</pre><button class="copy" type="button" data-copy="m-wt">Copy</button></div>
+          <p class="note">Pick branch names you want to keep. <code class="i">git worktree prune</code> drops records of worktrees whose folder is gone.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LAUNCH ================= -->
+    <section class="view" id="v-launch" role="tabpanel" aria-label="Launch and projects" hidden>
+      <div class="view-head">
+        <p class="kicker">Launch &amp; projects</p>
+        <h1>Three keystrokes to an agent</h1>
+        <p class="lede"><kbd>ctrl</kbd>+<kbd>b</kbd> then <kbd>&darr;</kbd> opens Quick Actions. Type the word, press <kbd>Enter</kbd>. Everything opens in the folder you are in.</p>
+      </div>
+      <div class="card">
+        <div class="scroll"><table>
+          <thead><tr><th>Type</th><th>Entry</th><th>Opens</th></tr></thead>
+          <tbody>
+            <tr><td class="m">claude</td><td>Claude Dangerously Skip Permission</td><td>New tab: <code class="i">claude --dangerously-skip-permissions</code></td></tr>
+            <tr><td class="m">agy</td><td>Agy Dangerously Skip Permission</td><td>New tab: <code class="i">agy --dangerously-skip-permissions</code></td></tr>
+            <tr><td class="m">codex</td><td>Codex Dangerously Skip Sandbox</td><td>New tab: <code class="i">codex --dangerously-bypass-approvals-and-sandbox</code></td></tr>
+            <tr><td class="m">grid</td><td>Agent Grid 2x2</td><td>Workers w1 claude, w2 codex, w3 agy, w4 shell</td></tr>
+            <tr><td class="m">workers</td><td>Workers</td><td>One of nine layouts, 2 to 8 workers</td></tr>
+            <tr><td class="m">workers</td><td>Workers (custom)</td><td>Type a layout, for example <code class="i">6 2 claude,codex</code></td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Codex has no <code class="i">--dangerously-skip-sandbox</code> flag. The entry keeps that name and runs the real flag.</p>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card" id="add-proj">
+          <div class="head-row"><h2>Add your projects</h2><span class="note"><kbd>ctrl</kbd>+<kbd>b</kbd> then <kbd>&uarr;</kbd> opens the picker</span></div>
+          <p class="note">A project is one TOML file in <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/projects/</code>. Pick it in the picker and herdr builds its workspace with the tabs you listed. New files appear the next time you open the picker.</p>
+          <div class="cmd"><pre id="l-proj">D="$(herdr plugin config-dir cloudmanic.herdr-plus)/projects"
+mkdir -p "$D"
+cat > "$D/my-app.toml" &lt;&lt;'EOF'
+name = "my-app"
+description = "~/code/my-app"
+working_dir = "~/code/my-app"
+
+[[tabs]]
+name = "claude"
+command = "claude --dangerously-skip-permissions"
+
+[[tabs]]
+name = "terminal"
+EOF</pre><button class="copy" type="button" data-copy="l-proj">Copy</button></div>
+          <p class="note">The folder must exist. Change the paths to your own project.</p>
+        </div>
+        <div class="card">
+          <h2>Project file fields</h2>
+          <div class="scroll"><table>
+            <thead><tr><th>Field</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td class="m">name</td><td>The name shown in the picker.</td></tr>
+              <tr><td class="m">description</td><td>Optional grey text next to the name.</td></tr>
+              <tr><td class="m">working_dir</td><td>Where every tab starts. <code class="i">~</code> and <code class="i">$VARS</code> expand. The folder must exist.</td></tr>
+              <tr><td class="m">[[tabs]]</td><td>One tab. Tabs open in file order.</td></tr>
+              <tr><td class="m">name</td><td>Inside a <code class="i">[[tabs]]</code> block: the tab label.</td></tr>
+              <tr><td class="m">command</td><td>Inside a <code class="i">[[tabs]]</code> block: typed into the tab's shell and run. Leave it out for an empty shell.</td></tr>
+            </tbody>
+          </table></div>
+          <p class="note">Panes inside a tab, project groups and a per-tab folder are covered in the full guide.</p>
+        </div>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card">
+          <div class="head-row"><h2>Worktree layout</h2><span class="badge">optional</span></div>
+          <p class="note">With a worktree layout, every new herdr worktree opens ready, for example with a <code class="i">claude</code> tab and a <code class="i">terminal</code> tab. The installer does not turn it on. Copy <code class="i">files/worktrees/default.toml</code> from this repo into the plugin folder's <code class="i">worktrees/</code> folder to enable it. Delete the file to turn it off.</p>
+          <div class="cmd"><pre id="l-wtdir">D="$(herdr plugin config-dir cloudmanic.herdr-plus)/worktrees"
+mkdir -p "$D"
+cp files/worktrees/default.toml "$D/"   # run from a clone of this repo</pre><button class="copy" type="button" data-copy="l-wtdir">Copy</button></div>
+        </div>
+        <div class="card">
+          <h2>Worktree commands</h2>
+          <div class="cmd"><pre id="l-wt">herdr worktree create --cwd "$PWD" --branch &lt;name&gt; --no-focus
+herdr worktree list
+herdr worktree remove --workspace &lt;id&gt;</pre><button class="copy" type="button" data-copy="l-wt">Copy</button></div>
+          <p class="note">In the Herdr app, <kbd>&#8984;N</kbd> starts a new worktree.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= KEYS ================= -->
+    <section class="view" id="v-keys" role="tabpanel" aria-label="Keys and shell" hidden>
+      <div class="view-head">
+        <p class="kicker">Keys &amp; shell</p>
+        <h1>Every shortcut, one place</h1>
+        <p class="lede">The Herdr app's native shortcuts, herdr's prefix keys, the pickers, and the optional shell suggestions.</p>
+      </div>
+      <input class="text" id="kq" type="search" placeholder="Filter shortcuts: split, tab, close, worktree" aria-label="Filter shortcuts" autocomplete="off">
+      <p class="note" id="knone" hidden>No shortcut matches. Try split, tab, close or worktree.</p>
+      <div class="stack2">
+        <div class="card"><h2>Herdr app (&#8984;)</h2><div class="scroll"><table><tbody id="k-app"></tbody></table></div></div>
+        <div class="card"><h2>Inside a picker</h2><div class="scroll"><table><tbody id="k-picker"></tbody></table></div></div>
+        <div class="card"><h2>Prefix: <kbd>ctrl</kbd>+<kbd>b</kbd> then</h2><div class="scroll"><table><tbody id="k-prefix"></tbody></table></div></div>
+        <div class="card">
+          <div class="head-row"><h2>Shell suggestions</h2><span class="badge">optional</span></div>
+          <p class="note">Not part of the installer. This is an optional zsh setup, described in the guide's &ldquo;Command suggestions in the shell&rdquo; section: <a href="https://github.com/mrx-arafat/herdr-setup/blob/main/docs/GUIDE.md" target="_blank" rel="noopener noreferrer">docs/GUIDE.md</a>. If you set it up, these keys apply:</p>
+          <div class="scroll"><table><tbody id="k-shell"></tbody></table></div>
+          <p class="note">With that zsh setup, refresh herdr's completion after <code class="i">herdr update</code>:</p>
+          <div class="cmd"><pre id="k-comp">herdr completion zsh &gt; ~/.zfunc/_herdr</pre><button class="copy" type="button" data-copy="k-comp">Copy</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RULES ================= -->
+    <section class="view" id="v-rules" role="tabpanel" aria-label="Working agreement" hidden>
+      <div class="view-head">
+        <p class="kicker">Working agreement</p>
+        <h1>Rules worth giving your agents</h1>
+        <p class="lede">With permission prompts off, written rules are the safety net. This is a starting point. Put the rules in the file your agent reads, and edit them to match how you work.</p>
+      </div>
+      <div class="groups">
+        <div class="card" style="--tone: var(--danger)">
+          <div class="head-row"><h2>Ask first</h2><span class="badge danger">hard stops</span></div>
+          <ul class="rules">
+            <li>No destructive database commands without asking, even on staging.</li>
+            <li>No <code class="i">git add</code>, commit, push, pull, merge, rebase, reset, stash or checkout unless asked.</li>
+            <li>Never create or switch branches unasked. Push new branches with <code class="i">git push -u</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>Workflow</h2>
+          <ul class="rules">
+            <li>Plan before large changes.</li>
+            <li>Reproduce a bug before fixing it.</li>
+            <li>Write a failing test first.</li>
+          </ul>
+        </div>
+        <div class="card" style="--tone: var(--ok)">
+          <h2>Tests and proof</h2>
+          <ul class="rules">
+            <li>Run only the tests that cover the change. CI runs the full suite.</li>
+            <li>Passing tests are not proof. Run the program.</li>
+            <li>Check visible changes in a real browser.</li>
+          </ul>
+        </div>
+        <div class="card" style="--tone: var(--c-agy)">
+          <h2>Docs</h2>
+          <ul class="rules">
+            <li>Update the docs in the same change as the code.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid2 even">
+        <div class="card">
+          <h2>Where agents read rules</h2>
+          <ul class="rules">
+            <li><b>Claude Code</b> reads <code class="i">CLAUDE.md</code> (<code class="i">~/.claude/CLAUDE.md</code> for every project).</li>
+            <li><b>Codex</b> reads <code class="i">~/.codex/AGENTS.md</code>, plus <code class="i">AGENTS.md</code> files from the project root down.</li>
+            <li><b>Agy and Gemini</b> read <code class="i">~/.gemini/GEMINI.md</code>.</li>
+          </ul>
+          <p class="note">Keep one <code class="i">~/AGENTS.md</code> and copy it with <code class="i">files/extras/sync-agent-rules</code> from this repo. It is a script that writes a marked block into the Codex and Gemini files and leaves everything else in them alone. It is not installed by default. Run it once, and again after every edit to <code class="i">~/AGENTS.md</code>.</p>
+          <div class="cmd"><pre id="r-sync">cp files/extras/sync-agent-rules ~/.local/bin/ &amp;&amp; chmod +x ~/.local/bin/sync-agent-rules
+sync-agent-rules</pre><button class="copy" type="button" data-copy="r-sync">Copy</button></div>
+          <p class="note">Run it from the root of a copy of this repo. The second line is the one to rerun later.</p>
+        </div>
+        <div class="card">
+          <div class="head-row"><h2>Starter rules</h2><span class="note">Markdown. Edit freely.</span></div>
+          <div class="cmd"><pre id="r-starter"># Rules for coding agents
+
+## Ask first
+- Never run destructive database commands without asking first, even on staging.
+  This includes migrate:fresh, db:reset, DROP, TRUNCATE and DELETE without a WHERE.
+- Never run git add, commit, push, pull, merge, rebase, reset, stash or checkout unless I ask.
+- Never create or switch branches unless I ask.
+  Push new branches with git push -u.
+
+## Workflow
+- Plan before large changes.
+- Reproduce a bug before fixing it.
+- Write a failing test first.
+
+## Tests and proof
+- Run only the tests that cover your change.
+  CI runs the full suite.
+- Passing tests are not proof.
+  Run the program.
+- Check visible changes in a real browser.
+
+## Docs
+- Update the docs in the same change as the code.</pre><button class="copy" type="button" data-copy="r-starter">Copy</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TESTED ================= -->
+    <section class="view" id="v-health" role="tabpanel" aria-label="Tested" hidden>
+      <div class="view-head">
+        <p class="kicker">Tested</p>
+        <h1>What was tested, and what was not</h1>
+        <p class="lede">Every row below was run with real agents where it matters. Versions are the ones used.</p>
+      </div>
+      <div class="grid2 even">
+        <div class="card">
+          <h2>Versions tested</h2>
+          <div class="scroll"><table>
+            <thead><tr><th>Tool</th><th>Version</th></tr></thead>
+            <tbody>
+              <tr><td>herdr</td><td class="m">0.9.3</td></tr>
+              <tr><td>herdr-plus</td><td class="m">0.1.24</td></tr>
+              <tr><td>Claude Code</td><td class="m">2.1.296</td></tr>
+              <tr><td>Codex CLI</td><td class="m">0.162.1</td></tr>
+              <tr><td>Antigravity CLI</td><td class="m">1.3.3</td></tr>
+              <tr><td>zsh</td><td class="m">5.9</td></tr>
+              <tr><td>macOS</td><td class="m">26.5</td></tr>
+            </tbody>
+          </table></div>
+          <p class="note">The installer requires herdr 0.7.0 or newer.</p>
+        </div>
+        <div class="card">
+          <h2>Check your own install</h2>
+          <div class="cmd"><pre id="h-check">herdr config check
+herdr plugin list
+herdr integration status
+fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</button></div>
+          <p class="note"><code class="i">herdr config check</code> should print <code class="i">config: ok</code>. <code class="i">herdr plugin list</code> should show herdr-plus enabled.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Test record</h2>
+        <div class="scroll"><table class="rec">
+          <thead><tr><th>Check</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Quick Actions keyword ranking: typing <code class="i">claude</code>, <code class="i">agy</code>, <code class="i">codex</code>, <code class="i">grid</code>, <code class="i">workers</code> puts the right entry first</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Claude shows <code class="i">bypass permissions on</code>. Codex shows <code class="i">permissions: YOLO mode</code></td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>11 fleet layouts, 1 to 9 workers over 1 to 3 tabs, with equal columns and rows</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Agents cycle in order, and numbering continues on a second run</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Real Claude workers: <code class="i">fleet up</code> returns when they are ready, and <code class="i">send</code> and <code class="i">wait</code> return the replies</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td><code class="i">fleet clear</code> resets context to <code class="i">0 tokens</code>. <code class="i">fleet close</code> removes workers</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>The Workers presets and Workers (custom) launch from the picker</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Installer sandbox suite</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>All scripts pass shellcheck</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Linux and Windows</td><td><span class="status open">Not run</span></td></tr>
+            <tr><td>Physical key presses (they were driven through herdr's CLI instead)</td><td><span class="status open">Not run</span></td></tr>
+            <tr><td>Agy's approval banner, and an Agy clear command</td><td><span class="status open">Not run</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>Built on <a href="https://herdr.dev" target="_blank" rel="noopener noreferrer">herdr</a> and <a href="https://github.com/cloudmanic/herdr-plus" target="_blank" rel="noopener noreferrer">herdr-plus</a> by cloudmanic. MIT licensed.</p>
+      <p><a href="https://github.com/mrx-arafat/herdr-setup" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function load(k) { try { return JSON.parse(localStorage.getItem('herdr-setup.' + k)); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem('herdr-setup.' + k, JSON.stringify(v)); } catch (e) { /* per-viewer convenience only */ } }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  /* ---------- toast and copy ---------- */
+  var toastTimer;
+  function toast(msg) { var t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800); }
+  function copyText(text, node) {
+    function fallback() {
+      if (!node) {
+        node = document.createElement('pre'); node.textContent = text;
+        node.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(node);
+      }
+      var r = document.createRange(); r.selectNodeContents(node); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast('Selected. Press Cmd+C or Ctrl+C to copy');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Copied: ' + text.split('\n')[0]); }, fallback);
+    } else { fallback(); }
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-copy]');
+    if (b) { var n = document.getElementById(b.getAttribute('data-copy')); if (n) copyText(n.textContent, n); return; }
+    var g = e.target.closest('[data-goto]');
+    if (g) { show(g.getAttribute('data-goto')); window.scrollTo(0, 0); }
+  });
+
+  /* ---------- views ---------- */
+  var VIEWS = ['start', 'planner', 'delegate', 'manage', 'launch', 'keys', 'rules', 'health'];
+  function show(v) {
+    if (VIEWS.indexOf(v) < 0) v = 'start';
+    VIEWS.forEach(function (x) { $('#v-' + x).hidden = x !== v; });
+    $$('nav.rail [data-view]').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-view') === v)); });
+    save('view', v);
+    if (location.hash.slice(1) !== v) { try { history.replaceState(null, '', '#' + v); } catch (e) { /* hash is optional */ } }
+  }
+  $$('nav.rail [data-view]').forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-view')); window.scrollTo(0, 0); }); });
+  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+
+  /* ---------- theme ---------- */
+  var THEMES = ['system', 'light', 'dark'];
+  var LABELS = { system: 'System', light: 'Light', dark: 'Dark' };
+  // A host page may set data-theme itself. "System" hands control back to whatever it set.
+  var hostTheme = document.documentElement.getAttribute('data-theme');
+  function applyTheme(t) {
+    var root = document.documentElement;
+    if (t === 'system') { if (hostTheme) root.setAttribute('data-theme', hostTheme); else root.removeAttribute('data-theme'); }
+    else root.setAttribute('data-theme', t);
+    $('#theme-label').textContent = LABELS[t];
+    $('#theme-icon').innerHTML = t === 'light' ? '&#9788;' : t === 'dark' ? '&#9790;' : '&#9680;';
+    $('#theme').setAttribute('aria-label', 'Theme: ' + LABELS[t] + '. Change theme');
+  }
+  var theme = load('theme');
+  if (THEMES.indexOf(theme) < 0) theme = 'system';
+  applyTheme(theme);
+  $('#theme').addEventListener('click', function () { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; applyTheme(theme); save('theme', theme); });
+
+  /* ---------- planner ---------- */
+  var AGENTS = [
+    { id: 'claude', note: 'Claude Code', flag: 'CLAUDE' },
+    { id: 'codex', note: 'OpenAI Codex', flag: 'CODEX' },
+    { id: 'agy', note: 'Antigravity', flag: 'AGY' },
+    { id: 'shell', note: 'Empty terminal', flag: '' }
+  ];
+  var PRESETS = {
+    '2 1 claude': '2 workers', '3 1 claude': '3 workers', '4 1 claude': '4 workers',
+    '6 1 claude': '6 workers, one tab', '6 2 claude': '6 workers, two tabs', '6 3 claude': '6 workers, three tabs',
+    '8 2 claude': '8 workers, two tabs', '4 1 claude,codex': '4 mixed', '6 2 claude,codex,agy': '6 mixed, two tabs'
+  };
+  var s0 = load('plan') || {};
+  var plan = {
+    n: clamp(parseInt(s0.n, 10) || 6, 1, 12),
+    t: clamp(parseInt(s0.t, 10) || 2, 1, 4),
+    kinds: Array.isArray(s0.kinds) && s0.kinds.length ? s0.kinds.filter(function (k) { return ['claude', 'codex', 'agy', 'shell'].indexOf(k) >= 0; }) : ['claude', 'codex'],
+    safe: !!s0.safe,
+    ws: typeof s0.ws === 'string' && s0.ws ? s0.ws : 'my-app'
+  };
+  if (!plan.kinds.length) plan.kinds = ['claude'];
+  function slug(s) { var x = String(s).toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^[^a-z]*/, '').slice(0, 20); return x || 'ws'; }
+
+  // Same algorithm as fleet.sh: columns = ceil(sqrt(k)); the first (k % cols) columns get one extra row;
+  // workers are numbered in reading order, left to right, top to bottom.
+  function grid(k) {
+    var cols = Math.ceil(Math.sqrt(k)), base = Math.floor(k / cols), extra = k % cols, rows = [], order = [];
+    for (var c = 0; c < cols; c++) rows.push(base + (c < extra ? 1 : 0));
+    var maxr = Math.max.apply(null, rows);
+    for (var r = 0; r < maxr; r++) for (var c2 = 0; c2 < cols; c2++) if (r < rows[c2]) order.push([c2, r]);
+    return { cols: cols, rows: rows, order: order };
+  }
+  function spread(n, t) { var per = Math.floor(n / t), rem = n % t, out = []; for (var i = 0; i < t; i++) out.push(per + (i < rem ? 1 : 0)); return out; }
+  function kinds() { return AGENTS.map(function (a) { return a.id; }).filter(function (id) { return plan.kinds.indexOf(id) >= 0; }); }
+
+  function renderControls() {
+    if (plan.t > plan.n) plan.t = plan.n;
+    $('#count').textContent = plan.n;
+    $('#dec').disabled = plan.n <= 1; $('#inc').disabled = plan.n >= 12;
+    $('#quick').innerHTML = [2, 3, 4, 6, 8, 9, 12].map(function (v) {
+      return '<button type="button" class="chip" data-n="' + v + '" aria-pressed="' + (plan.n === v) + '" aria-label="' + v + ' workers">' + v + '</button>';
+    }).join('');
+    var seg = '';
+    for (var t = 1; t <= 4; t++) seg += '<button type="button" data-t="' + t + '"' + (t > plan.n ? ' disabled' : '') + ' aria-pressed="' + (plan.t === t) + '" aria-label="' + t + (t === 1 ? ' tab' : ' tabs') + '">' + t + '</button>';
+    $('#tabs').innerHTML = seg;
+    $('#agents').innerHTML = AGENTS.map(function (a) {
+      return '<button type="button" class="agentbtn" data-k="' + a.id + '" style="--ac: var(--c-' + a.id + ')" aria-pressed="' + (plan.kinds.indexOf(a.id) >= 0) + '">' +
+        '<i class="dot" style="background: var(--c-' + a.id + ')"></i><span>' + a.id + '<small>' + a.note + '</small></span></button>';
+    }).join('');
+    $('#safe').checked = plan.safe;
+    if (document.activeElement !== $('#wsname')) $('#wsname').value = plan.ws;
+  }
+  $('#quick').addEventListener('click', function (e) { var b = e.target.closest('[data-n]'); if (b) { plan.n = +b.getAttribute('data-n'); update(); } });
+  $('#tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-t]'); if (b && !b.disabled) { plan.t = +b.getAttribute('data-t'); update(); } });
+  $('#agents').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-k]'); if (!b) return; var id = b.getAttribute('data-k'); var i = plan.kinds.indexOf(id);
+    if (i >= 0) { if (plan.kinds.length === 1) { toast('Keep at least one agent'); return; } plan.kinds.splice(i, 1); } else plan.kinds.push(id);
+    update();
+  });
+
+  function renderPreview() {
+    var ks = kinds(), tabs = spread(plan.n, plan.t), num = 0, tally = {}, html = '';
+    tabs.forEach(function (k, ti) {
+      var g = grid(k), label = plan.t > 1 ? 'workers-' + (ti + 1) : 'workers', cells = {};
+      g.order.forEach(function (pos) {
+        var kind = ks[num % ks.length]; num++; tally[kind] = (tally[kind] || 0) + 1;
+        cells[pos[0] + ':' + pos[1]] = '<div class="cell" style="--ac: var(--t-' + kind + ')"><span class="w">w' + num + '</span><span class="k">' + kind + '</span></div>';
+      });
+      var cols = '';
+      for (var c = 0; c < g.cols; c++) { var col = ''; for (var r = 0; r < g.rows[c]; r++) col += cells[c + ':' + r]; cols += '<div class="col">' + col + '</div>'; }
+      html += '<div class="win"><div class="win-bar"><span class="lights"><i></i><i></i><i></i></span><span class="tab">' + label + '</span><span class="n">' + k + (k === 1 ? ' pane' : ' panes') + '</span></div><div class="panes">' + cols + '</div></div>';
+    });
+    $('#windows').innerHTML = html;
+    $('#legend').innerHTML = ks.map(function (k) { return '<span><i style="background: var(--c-' + k + ')"></i>' + k + '</span>'; }).join('');
+    var sum = '<span class="pill"><b>' + plan.n + '</b> workers</span><span class="pill"><b>' + plan.t + '</b> ' + (plan.t === 1 ? 'tab' : 'tabs') + '</span>';
+    ks.forEach(function (k) { if (tally[k]) sum += '<span class="pill">' + k + ' &times; <b>' + tally[k] + '</b></span>'; });
+    sum += '<span class="pill">' + (plan.safe ? 'prompts kept' : 'checks off') + '</span>';
+    $('#summary').innerHTML = sum;
+  }
+
+  function planCommand() {
+    var ks = kinds(), k = ks.join(','), spec, env = '';
+    if (k === 'claude' && plan.t === 1) spec = String(plan.n);
+    else if (k === 'claude') spec = plan.n + ' ' + plan.t;
+    else spec = plan.n + ' ' + plan.t + ' ' + k;
+    if (plan.safe) AGENTS.forEach(function (a) { if (a.flag && ks.indexOf(a.id) >= 0) env += 'FLEET_' + a.flag + '_ARGS="" '; });
+    return { cmd: env + 'fleet up ' + spec, key: plan.n + ' ' + plan.t + ' ' + k };
+  }
+
+  function renderRun() {
+    var pc = planCommand(), p = slug(plan.ws);
+    $('#runcmd').textContent = pc.cmd;
+    $('#names').textContent = 'Agent names: ' + p + '-w1' + (plan.n > 1 ? ' to ' + p + '-w' + plan.n : '');
+    var start = '<kbd>ctrl</kbd>+<kbd>b</kbd> <span class="then">then</span> <kbd>&darr;</kbd> <span class="then">type</span> ';
+    var path;
+    if (pc.key === '4 1 claude,codex,agy,shell') path = start + '<code class="i">grid</code>';
+    else if (PRESETS[pc.key]) path = start + '<code class="i">workers</code> <span class="then">pick</span> <code class="i">Workers</code> <span class="then">then</span> <code class="i">' + PRESETS[pc.key] + '</code>';
+    else path = start + '<code class="i">workers</code> <span class="then">pick</span> <code class="i">Workers (custom)</code> <span class="then">type</span> <code class="i">' + esc(pc.key) + '</code>';
+    $('#pickpath').innerHTML = path + ' <kbd>Enter</kbd>';
+    var note = $('#picknote');
+    note.className = plan.safe ? 'note warn' : 'note';
+    note.textContent = plan.safe ? 'Quick Actions always start agents with their checks off. To keep the prompts, use the Terminal command.' : 'Quick Actions and the Terminal command build the same fleet.';
+  }
+
+  function update() { renderControls(); renderPreview(); renderRun(); renderTasks(); save('plan', plan); }
+  $('#dec').addEventListener('click', function () { plan.n = clamp(plan.n - 1, 1, 12); update(); });
+  $('#inc').addEventListener('click', function () { plan.n = clamp(plan.n + 1, 1, 12); update(); });
+  $('#safe').addEventListener('change', function (e) { plan.safe = e.target.checked; update(); });
+  $('#wsname').addEventListener('input', function (e) { plan.ws = e.target.value; renderRun(); outputs(); save('plan', plan); });
+  function wireTabs(attr, paneAttr) {
+    $$('[' + attr + ']').forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('[' + attr + ']').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+        $$('[' + paneAttr + ']').forEach(function (p) { p.hidden = p.getAttribute(paneAttr) !== b.getAttribute(attr); });
+      });
+    });
+  }
+  wireTabs('data-inst', 'data-instpane');
+  wireTabs('data-run', 'data-runpane');
+  wireTabs('data-out', 'data-outpane');
+
+  /* ---------- delegate ---------- */
+  var EXAMPLE = [
+    { who: 'w1', text: 'Add input validation to src/signup.ts and a focused test for it' },
+    { who: 'w2', text: 'Find why tests/api/orders.test.ts is flaky and fix the cause' },
+    { who: 'w3', text: 'Review the diff on this branch and list real bugs only' }
+  ];
+  var tasks = load('tasks');
+  if (!Array.isArray(tasks)) tasks = EXAMPLE.map(function (t) { return { who: t.who, text: t.text }; });
+  function q1(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
+  function options(sel) {
+    var o = []; for (var i = 1; i <= plan.n; i++) o.push('w' + i); o.push('all', 'idle');
+    if (o.indexOf(sel) < 0) o.unshift(sel);
+    return o.map(function (v) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('');
+  }
+  function renderTasks() {
+    var box = $('#tasks');
+    box.innerHTML = tasks.length ? tasks.map(function (t, i) {
+      return '<div class="task" data-i="' + i + '"><select class="text" aria-label="Worker for task ' + (i + 1) + '">' + options(t.who) + '</select>' +
+        '<textarea class="text" rows="2" aria-label="Task ' + (i + 1) + '" placeholder="What should this worker do?">' + esc(t.text) + '</textarea>' +
+        '<button class="iconbtn" type="button" data-rm aria-label="Remove task ' + (i + 1) + '">&times;</button></div>';
+    }).join('') : '<p class="note">No tasks yet. Add one, or load the example.</p>';
+    outputs();
+  }
+  $('#tasks').addEventListener('input', function (e) { var row = e.target.closest('[data-i]'); if (!row || e.target.tagName !== 'TEXTAREA') return; tasks[+row.getAttribute('data-i')].text = e.target.value; outputs(); });
+  $('#tasks').addEventListener('change', function (e) { var row = e.target.closest('[data-i]'); if (!row || e.target.tagName !== 'SELECT') return; tasks[+row.getAttribute('data-i')].who = e.target.value; outputs(); });
+  $('#tasks').addEventListener('click', function (e) { if (!e.target.closest('[data-rm]')) return; tasks.splice(+e.target.closest('[data-i]').getAttribute('data-i'), 1); renderTasks(); });
+  function outputs() {
+    var live = tasks.filter(function (t) { return t.text.trim(); });
+    var lines = clamp(parseInt($('#dlines').value, 10) || 120, 10, 2000), wait = $('#dwait').checked, whos = [], out = [];
+    $('#tcount').textContent = live.length + (live.length === 1 ? ' task' : ' tasks');
+    save('tasks', tasks);
+    if (!live.length) { $('#dscript').textContent = '# Add a task on the left'; $('#dprompt').textContent = 'Add a task on the left to get a prompt.'; return; }
+    live.forEach(function (t) { out.push('fleet send ' + t.who + ' ' + q1(t.text.trim())); if (whos.indexOf(t.who) < 0) whos.push(t.who); });
+    var target = whos.indexOf('all') >= 0 ? 'all' : whos.join(',');
+    if (wait) { out.push('fleet wait ' + target); whos.forEach(function (w) { out.push('fleet read ' + w + ' ' + lines); }); }
+    $('#dscript').textContent = out.join('\n');
+    var p = ['You are running inside herdr. Use the fleet command in this workspace to delegate. Workers are panes labelled w1, w2 and so on.', '', 'Tasks:'];
+    live.forEach(function (t) { p.push('- ' + t.who + ': ' + t.text.trim()); });
+    p.push('', 'Steps:', '1. Run fleet ls and check that every target worker exists and is idle.', "2. Send each task with fleet send <worker> '<task>'.");
+    if (wait) p.push('3. Run fleet wait ' + target + ', then fleet read <worker> ' + lines + ' for each worker.', '4. Summarize what each worker did, what changed, and anything that failed or needs my decision.');
+    p.push('', 'Do not commit, push, switch branches or run destructive commands. Leave every change in the working tree for me to review.');
+    $('#dprompt').textContent = p.join('\n');
+  }
+  $('#addtask').addEventListener('click', function () {
+    var used = tasks.map(function (t) { return t.who; }), who = 'w1';
+    for (var i = 1; i <= plan.n; i++) { if (used.indexOf('w' + i) < 0) { who = 'w' + i; break; } }
+    tasks.push({ who: who, text: '' }); renderTasks();
+    var tas = $$('#tasks textarea'); if (tas.length) tas[tas.length - 1].focus();
+  });
+  $('#sample').addEventListener('click', function () { tasks = EXAMPLE.map(function (t) { return { who: t.who, text: t.text }; }); renderTasks(); });
+  $('#cleartasks').addEventListener('click', function () { tasks = []; renderTasks(); });
+  $('#dwait').addEventListener('change', outputs);
+  $('#dlines').addEventListener('input', outputs);
+
+  /* ---------- maintenance ---------- */
+  var MAINT = [
+    ['herdr update', 'Newest herdr'],
+    ['herdr completion zsh > ~/.zfunc/_herdr', 'Only if you use the optional zsh setup: refresh tab completion after an update'],
+    ['herdr integration status', 'Claude, Codex and Agy should say current'],
+    ['herdr config check', 'Should print config: ok'],
+    ['herdr plugin list', 'herdr-plus should be enabled'],
+    ['herdr plugin log list --plugin cloudmanic.herdr-plus', 'No failed runs'],
+    ['fleet ls', 'Close workers you no longer need']
+  ];
+  var mstate = load('maint') || {};
+  if (!mstate.done || typeof mstate.done !== 'object') mstate.done = {};
+  function renderMaint() {
+    $('#mcheck').innerHTML = MAINT.map(function (m, i) {
+      return '<label for="mc' + i + '"><input type="checkbox" id="mc' + i + '" data-m="' + i + '"' + (mstate.done[i] ? ' checked' : '') + '><div><div class="c">' + esc(m[0]) + '</div><div class="d">' + esc(m[1]) + '</div></div></label>';
+    }).join('');
+    stamp();
+  }
+  function stamp() {
+    var done = MAINT.filter(function (_, j) { return mstate.done[j]; }).length;
+    $('#mstamp').textContent = done + ' of ' + MAINT.length + ' done' + (mstate.stamp ? ' \u00b7 last full round ' + mstate.stamp : '');
+  }
+  $('#mcheck').addEventListener('change', function (e) {
+    var i = e.target.getAttribute('data-m'); if (i === null) return;
+    mstate.done[i] = e.target.checked;
+    if (MAINT.every(function (_, j) { return mstate.done[j]; })) { mstate.stamp = new Date().toISOString().slice(0, 10); toast('Maintenance round complete'); }
+    save('maint', mstate); stamp();
+  });
+  $('#mreset').addEventListener('click', function () { mstate.done = {}; save('maint', mstate); renderMaint(); });
+
+  /* ---------- keys ---------- */
+  function kb(s) { return s.split(' ').map(function (k) { return (k === 'or' || k === 'to') ? '<span class="note">' + k + '</span>' : '<kbd>' + esc(k) + '</kbd>'; }).join(' '); }
+  var KEYS = {
+    'k-app': [['\u2318T', 'New tab'], ['\u2318\u21e7N', 'New workspace'], ['\u2318N', 'New worktree'], ['\u2318D', 'Split right'], ['\u2318\u21e7D', 'Split down'],
+      ['\u2318\u2325 arrows', 'Move between panes'], ['\u2318\u21e7[ or \u2318\u21e7]', 'Previous or next tab'], ['\u23181 to \u23189', 'Jump to tab'], ['\u2318\u21e7\u21a9', 'Zoom the pane'],
+      ['\u2318W', 'Close pane'], ['\u2318\u21e7W', 'Close tab'], ['\u2318P', 'Workspace picker'], ['\u2318\u21e7P', 'Command palette'], ['\u2318B', 'Toggle sidebar'], ['\u2318/', 'Show shortcuts']],
+    'k-prefix': [['\u2193', 'Quick Actions'], ['\u2191', 'Projects'], ['c', 'New tab'], ['n or p', 'Next or previous tab'], ['v', 'Split right'], ['-', 'Split down'],
+      ['h j k l', 'Move between panes'], ['z', 'Zoom the pane'], ['x', 'Close pane'], ['w', 'Workspace navigation'], ['shift+n', 'New workspace'],
+      ['shift+d', 'Close workspace'], ['g', 'Go to any agent'], ['f', 'File viewer in a split'], ['[', 'Copy mode'], ['q', 'Detach'], ['?', 'Every binding']],
+    'k-picker': [['Type', 'Filter the list'], ['\u2191 or \u2193', 'Move the highlight'], ['Enter', 'Run or open'], ['Esc', 'Back one step, or close'], ['ctrl+g', 'Projects only: open as a worktree']],
+    'k-shell': [['\u2192 or End', 'Accept the gray suggestion'], ['Tab', 'Completion menu, herdr subcommands included'], ['ctrl+r', 'Search history'], ['ctrl+l', 'Clear the screen']]
+  };
+  Object.keys(KEYS).forEach(function (id) {
+    $('#' + id).innerHTML = KEYS[id].map(function (r) { return '<tr data-k><td class="nw">' + kb(r[0]) + '</td><td>' + r[1] + '</td></tr>'; }).join('');
+  });
+  $('#kq').addEventListener('input', function (e) {
+    var t = e.target.value.trim().toLowerCase();
+    var shown = 0;
+    $$('#v-keys tr[data-k]').forEach(function (tr) { var hit = !t || tr.textContent.toLowerCase().indexOf(t) >= 0; tr.classList.toggle('hide', !hit); if (hit) shown++; });
+    $$('#v-keys .stack2 > .card').forEach(function (c) { var rows = c.querySelectorAll('tr[data-k]'); var vis = c.querySelectorAll('tr[data-k]:not(.hide)'); c.classList.toggle('hide', !!t && rows.length > 0 && vis.length === 0); });
+    $('#knone').hidden = shown > 0;
+  });
+
+  /* ---------- command palette ---------- */
+  var INDEX = [
+    ['curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh', 'Install the herdr setup'],
+    ['curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh -s -- --yes', 'Install the herdr setup without questions'],
+    ['fleet up 6 2 claude', 'Six Claude workers, two tabs of three'],
+    ['fleet up 4 1 claude,codex', 'Four mixed workers in a 2x2'],
+    ['FLEET_CLAUDE_ARGS="" fleet up 4', 'Claude workers that keep their prompts'],
+    ['fleet ls', 'List workers with agent and status'],
+    ["fleet send w2 'task'", 'Give worker 2 a task'],
+    ["fleet send --wait all 'task'", 'Task to every worker, wait for all'],
+    ['fleet wait all', 'Wait until busy workers settle'],
+    ['fleet read w2 120', 'Last 120 lines from worker 2'],
+    ['fleet clear all', 'Fresh chat in Claude and Codex workers'],
+    ['fleet focus w3', 'Jump to worker 3'],
+    ['fleet close w3', 'Close worker 3'],
+    ['fleet close all', 'Close every worker, asks first'],
+    ['fleet help', 'All fleet commands and settings'],
+    ['herdr agent list', 'Every agent in every workspace'],
+    ["herdr agent prompt my-app-w1 'task' --wait", 'Prompt a named agent and wait'],
+    ['herdr worktree create --cwd "$PWD" --branch <name> --no-focus', 'New worktree as its own workspace'],
+    ['herdr worktree list', 'Worktrees of this repository'],
+    ['herdr worktree remove --workspace <id>', 'Remove a worktree and its workspace'],
+    ['git worktree prune', 'Drop records of deleted worktrees'],
+    ['herdr workspace close <id>', 'Close a workspace'],
+    ['herdr server stop', 'Stop herdr and every pane'],
+    ['herdr update', 'Update herdr'],
+    ['sync-agent-rules', 'Copy ~/AGENTS.md into the Codex and Gemini rules files'],
+    ['herdr completion zsh > ~/.zfunc/_herdr', 'Refresh shell completion (optional zsh setup)'],
+    ['herdr integration status', 'Are agent integrations current'],
+    ['herdr config check', 'Validate config.toml'],
+    ['herdr server reload-config', 'Apply config.toml changes'],
+    ['herdr plugin list', 'Installed plugins'],
+    ['herdr plugin log list --plugin cloudmanic.herdr-plus', 'herdr-plus runs with exit codes'],
+    ['herdr plugin action invoke quick-actions --plugin cloudmanic.herdr-plus', 'Open Quick Actions without a key'],
+    ['herdr plugin action invoke projects --plugin cloudmanic.herdr-plus', 'Open Projects without a key']
+  ];
+  var q = $('#q'), res = $('#results'), sel = 0, hits = [];
+  function score(item, t) {
+    if (!t) return 1;
+    var c = item[0].toLowerCase(), d = item[1].toLowerCase(), s = 0, words = t.split(/\s+/);
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i]; if (!w) continue; var ic = c.indexOf(w), id = d.indexOf(w);
+      if (ic < 0 && id < 0) return 0; s += (ic === 0 ? 6 : ic > 0 ? 4 : 0) + (id >= 0 ? 2 : 0);
+    }
+    return s;
+  }
+  function renderResults() {
+    var t = q.value.trim().toLowerCase();
+    var all = [[planCommand().cmd, 'From the planner, right now']].concat(INDEX);
+    hits = all.map(function (it, i) { return { it: it, s: score(it, t), i: i }; }).filter(function (h) { return h.s > 0; })
+      .sort(function (a, b) { return b.s - a.s || a.i - b.i; }).slice(0, 9).map(function (h) { return h.it; });
+    sel = clamp(sel, 0, Math.max(hits.length - 1, 0));
+    res.innerHTML = hits.length ? hits.map(function (h, i) {
+      return '<button type="button" role="option" data-i="' + i + '" aria-selected="' + (i === sel) + '"><span class="c">' + esc(h[0]) + '</span><span class="d">' + esc(h[1]) + '</span></button>';
+    }).join('') : '<div class="none">No command matches. Try install, fleet, worktree or close.</div>';
+  }
+  function openRes() { res.hidden = false; q.setAttribute('aria-expanded', 'true'); renderResults(); }
+  function closeRes() { res.hidden = true; q.setAttribute('aria-expanded', 'false'); }
+  function pick(i) { var h = hits[i]; if (!h) return; copyText(h[0]); closeRes(); q.blur(); }
+  q.addEventListener('focus', openRes);
+  q.addEventListener('input', function () { sel = 0; openRes(); });
+  q.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { sel = Math.min(sel + 1, hits.length - 1); renderResults(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { sel = Math.max(sel - 1, 0); renderResults(); e.preventDefault(); }
+    else if (e.key === 'Enter') { pick(sel); e.preventDefault(); }
+    else if (e.key === 'Escape') { closeRes(); q.blur(); }
+  });
+  res.addEventListener('mousedown', function (e) { var b = e.target.closest('[data-i]'); if (b) { e.preventDefault(); pick(+b.getAttribute('data-i')); } });
+  q.addEventListener('blur', function () { setTimeout(closeRes, 120); });
+  document.addEventListener('keydown', function (e) {
+    var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); q.focus(); }
+  });
+
+  /* ---------- boot ---------- */
+  update();
+  renderMaint();
+  show(location.hash.slice(1) || load('view') || 'start');
+})();
+</script>
+</body>
+</html>

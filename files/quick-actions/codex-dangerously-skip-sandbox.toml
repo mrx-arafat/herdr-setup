@@ -1,0 +1,6 @@
+# Same as the Claude action, for Codex.
+# Codex has no flag called --dangerously-skip-sandbox.
+# The real flag is --dangerously-bypass-approvals-and-sandbox.
+name = "Codex Dangerously Skip Sandbox"
+description = "new tab here"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/agent-tab.sh\" codex 'codex --dangerously-bypass-approvals-and-sandbox'"

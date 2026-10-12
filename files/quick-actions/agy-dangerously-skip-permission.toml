@@ -1,0 +1,4 @@
+# Same as the Claude action, for agy.
+name = "Agy Dangerously Skip Permission"
+description = "new tab here"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/agent-tab.sh\" agy 'agy --dangerously-skip-permissions'"

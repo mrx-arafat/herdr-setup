@@ -1,0 +1,31 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shellcheck
+
+      - name: Lint shell scripts
+        run: shellcheck -s sh install.sh tests/sandbox.sh files/scripts/*.sh files/extras/sync-agent-rules
+
+      - name: TOML files parse
+        run: python3 -c "import glob, tomllib; fs = glob.glob('files/**/*.toml', recursive=True); [tomllib.load(open(f, 'rb')) for f in fs]; print(len(fs), 'TOML files parse')"
+
+      - name: Installer sandbox tests
+        run: sh tests/sandbox.sh
