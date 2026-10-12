@@ -168,10 +168,12 @@ cmd_up() {
   count="${1:-}"
   tabs="${2:-1}"
   agents="${3:-claude}"
-  is_int "$count" && [ "$count" -ge 1 ] && [ "$count" -le "$MAX_WORKERS" ] ||
+  if ! { is_int "$count" && [ "$count" -ge 1 ] && [ "$count" -le "$MAX_WORKERS" ]; }; then
     die "count must be 1 to $MAX_WORKERS. Example: fleet up 6 2 claude"
-  is_int "$tabs" && [ "$tabs" -ge 1 ] && [ "$tabs" -le "$count" ] ||
+  fi
+  if ! { is_int "$tabs" && [ "$tabs" -ge 1 ] && [ "$tabs" -le "$count" ]; }; then
     die "tabs must be 1 to $count"
+  fi
   nkinds=0
   for a in $(printf '%s' "$agents" | tr ',' ' '); do
     valid_kind "$a" || die "unknown agent '$a'. Use claude, codex, agy or shell"
