@@ -359,8 +359,11 @@ By default every worker starts with its own safety checks off.
 To keep the prompts, override the flags for that run:
 
 ```bash
-FLEET_CLAUDE_ARGS="" fleet up 4                   # plain claude, with prompts
-FLEET_CODEX_ARGS="--full-auto" fleet up 2 1 codex  # your own codex flags
+# Claude Code with its permission prompts
+FLEET_CLAUDE_ARGS="" fleet up 4
+
+# Codex with its sandbox and approval prompts on
+FLEET_CODEX_ARGS="--sandbox workspace-write --ask-for-approval on-request" fleet up 2 1 codex
 ```
 
 ### Fleet settings
