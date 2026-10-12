@@ -65,7 +65,7 @@ fetch() {
   fi
   mkdir -p "$(dirname "$2")"
   tmp="$2.download.$$"
-  if ! curl -fsSL "$BASE/$1" -o "$tmp" || [ ! -s "$tmp" ]; then
+  if ! curl -fsSL --connect-timeout 20 --max-time 120 --retry 2 "$BASE/$1" -o "$tmp" || [ ! -s "$tmp" ]; then
     rm -f "$tmp"
     die "could not download $BASE/$1"
   fi
