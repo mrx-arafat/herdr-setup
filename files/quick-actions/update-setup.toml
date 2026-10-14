@@ -1,0 +1,7 @@
+# Type "update" in the Quick Actions picker. Opens a tab that runs herdr-setup update:
+# the newest herdr, herdr-plus, herdr's agent integrations and this setup's files.
+# It never restarts herdr, so running agents keep going. Quick actions have no TTY,
+# so scripts/agent-tab.sh makes the pane where you can watch it.
+name = "Update herdr setup"
+description = "herdr, herdr-plus and setup files"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/agent-tab.sh\" update 'sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/herdr-setup.sh\" update'"

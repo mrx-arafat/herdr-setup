@@ -10,18 +10,22 @@
 # What it does:
 #   1. Checks that herdr (0.7.0 or newer), jq and curl are installed.
 #   2. Installs the herdr-plus plugin (cloudmanic/herdr-plus) after asking you.
-#   3. Downloads two scripts and seven Quick Actions from this repo into the plugin config dir.
-#   4. Links the `fleet` command into ~/.local/bin when that folder is on your PATH.
+#   3. Downloads three scripts and eight Quick Actions from this repo into the plugin config dir.
+#   4. Links the `fleet` and `herdr-setup` commands into ~/.local/bin when that folder is on your PATH.
 #   5. Binds prefix+up to Projects and prefix+down to Quick Actions in herdr's config.toml.
 #   6. Reloads herdr and validates the config.
 #
 # Safe to re-run:
-#   - It never overwrites a file that already exists.
+#   - It never overwrites a file that already exists (only --update replaces, with a backup).
 #   - It backs up config.toml before touching it.
-#   - It skips a key binding that is already in use, and a `fleet` command that already exists.
+#   - It skips a key binding that is already in use, and a command name that already exists.
+#
+# Keep it current with `herdr-setup update`, or: curl ... | sh -s -- --update
 #
 # Options:
 #   --yes, -y    do not ask before installing the plugin
+#   --check      show what is out of date: herdr, herdr-plus, agent integrations, these files
+#   --update     update all of those. Never restarts herdr. Replaced files are backed up first
 #   --help, -h   show this help
 #
 # Environment:
@@ -37,8 +41,11 @@ PLUGIN="cloudmanic/herdr-plus"
 PLUGIN_ID="cloudmanic.herdr-plus"
 KEYS_FILE="$HOME/.config/herdr/config.toml"
 
-SCRIPTS="agent-tab.sh fleet.sh"
-ACTIONS="claude-dangerously-skip-permission agy-dangerously-skip-permission codex-dangerously-skip-sandbox agent-grid-2x2 workers workers-custom name-workers"
+RELEASES_URL="${HERDR_SETUP_RELEASES_URL:-https://github.com/herdrdev/herdr/releases/latest}"
+
+SCRIPTS="agent-tab.sh fleet.sh herdr-setup.sh"
+ACTIONS="claude-dangerously-skip-permission agy-dangerously-skip-permission codex-dangerously-skip-sandbox agent-grid-2x2 workers workers-custom name-workers update-setup"
+MODE=install
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -57,21 +64,50 @@ ask() {
   case "$ans" in y | Y | yes | YES) return 0 ;; *) return 1 ;; esac
 }
 
-# fetch <files/ path> <destination> [mode] - download one file, never overwriting
+# download <files/ path> <to> - one file, with no half-written file left on failure
+download() {
+  if ! curl -fsSL --connect-timeout 20 --max-time 120 --retry 2 "$BASE/$1" -o "$2" || [ ! -s "$2" ]; then
+    rm -f "$2"
+    die "could not download $BASE/$1"
+  fi
+}
+
+# fetch <files/ path> <destination> [mode] - install one file.
+# A plain install never overwrites. --update replaces a file that differs, after copying
+# yours to $BACKUP. --check only reports.
 fetch() {
-  if [ -e "$2" ]; then
+  if [ -e "$2" ] && [ "$MODE" = install ]; then
     say "  left alone (exists): $2"
     return 0
   fi
   mkdir -p "$(dirname "$2")"
   tmp="$2.download.$$"
-  if ! curl -fsSL --connect-timeout 20 --max-time 120 --retry 2 "$BASE/$1" -o "$tmp" || [ ! -s "$tmp" ]; then
+  download "$1" "$tmp"
+  if [ ! -e "$2" ]; then
+    if [ "$MODE" = check ]; then
+      rm -f "$tmp"
+      say "  missing: $2"
+      CHANGES=$((CHANGES + 1))
+      return 0
+    fi
+    mv "$tmp" "$2"
+    if [ -n "${3:-}" ]; then chmod "$3" "$2"; fi
+    say "  created: $2"
+  elif cmp -s "$tmp" "$2"; then
     rm -f "$tmp"
-    die "could not download $BASE/$1"
+    say "  up to date: $2"
+  elif [ "$MODE" = check ]; then
+    rm -f "$tmp"
+    say "  differs: $2"
+    CHANGES=$((CHANGES + 1))
+  else
+    mkdir -p "$BACKUP/$(dirname "$1")"
+    cp -p "$2" "$BACKUP/$1"
+    BACKED_UP=1
+    mv "$tmp" "$2" # a new file, so a script that is running keeps reading its old copy
+    if [ -n "${3:-}" ]; then chmod "$3" "$2"; fi
+    say "  updated: $2 (your old copy: $BACKUP/$1)"
   fi
-  mv "$tmp" "$2"
-  if [ -n "${3:-}" ]; then chmod "$3" "$2"; fi
-  say "  created: $2"
 }
 
 check_tools() {
@@ -79,15 +115,15 @@ check_tools() {
   command -v jq >/dev/null 2>&1 || die "jq is not installed. macOS: brew install jq. Debian/Ubuntu: sudo apt install jq"
   command -v curl >/dev/null 2>&1 || die "curl is not installed"
 
-  ver="$(herdr --version 2>/dev/null | awk '{print $NF}')"
+  ver="$(herdr_version)"
   major="${ver%%.*}"
   rest="${ver#*.}"
   minor="${rest%%.*}"
   case "$major$minor" in
     "" | *[!0-9]*) say "warning: could not read the herdr version ('$ver'), continuing" ;;
     *)
-      if [ "$major" -eq 0 ] && [ "$minor" -lt 7 ]; then
-        die "herdr $ver is too old. herdr-plus needs 0.7.0 or newer. Run: herdr update"
+      if [ "$major" -eq 0 ] && [ "$minor" -lt 7 ] && [ "$MODE" = install ]; then
+        die "herdr $ver is too old. herdr-plus needs 0.7.0 or newer. Run: herdr update, or this installer with --update"
       fi
       ;;
   esac
@@ -117,26 +153,176 @@ install_files() {
   for a in $ACTIONS; do fetch "quick-actions/$a.toml" "$CFG/quick-actions/$a.toml"; done
 }
 
-link_fleet() {
+# link_cmd <command> <script> - put a command on the PATH through ~/.local/bin
+link_cmd() {
   bin="$HOME/.local/bin"
   case ":$PATH:" in
     *":$bin:"*)
-      if [ -L "$bin/fleet" ] && [ "$(readlink "$bin/fleet")" = "$CFG/scripts/fleet.sh" ]; then
-        say "fleet: already linked in $bin"
-      elif [ -e "$bin/fleet" ] || command -v fleet >/dev/null 2>&1; then
-        say "fleet: skipped, a 'fleet' command already exists ($(command -v fleet))."
-        say "       Use: alias fleet='sh $CFG/scripts/fleet.sh'"
+      if [ -L "$bin/$1" ] && [ "$(readlink "$bin/$1")" = "$CFG/scripts/$2" ]; then
+        say "$1: already linked in $bin"
+      elif [ -e "$bin/$1" ] || command -v "$1" >/dev/null 2>&1; then
+        say "$1: skipped, a '$1' command already exists ($(command -v "$1"))."
+        say "       Use: alias $1='sh $CFG/scripts/$2'"
       else
         mkdir -p "$bin"
-        ln -s "$CFG/scripts/fleet.sh" "$bin/fleet"
-        say "fleet: linked $bin/fleet"
+        ln -s "$CFG/scripts/$2" "$bin/$1"
+        say "$1: linked $bin/$1"
       fi
       ;;
     *)
-      say "fleet: $bin is not on your PATH. Add this line to your shell profile:"
-      say "       alias fleet='sh $CFG/scripts/fleet.sh'"
+      say "$1: $bin is not on your PATH. Add this line to your shell profile:"
+      say "       alias $1='sh $CFG/scripts/$2'"
       ;;
   esac
+}
+
+link_cmds() {
+  link_cmd fleet fleet.sh
+  link_cmd herdr-setup herdr-setup.sh
+}
+
+herdr_version() { herdr --version 2>/dev/null | awk '{ print $NF }'; }
+
+# ver_lt <a> <b> - true when version a is older than b, like 0.9.3 and 0.9.4
+ver_lt() {
+  awk -v a="$1" -v b="$2" 'BEGIN { n = split(a, x, "."); m = split(b, y, "."); k = n > m ? n : m
+    for (i = 1; i <= k; i++) { if (x[i] + 0 < y[i] + 0) exit 0; if (x[i] + 0 > y[i] + 0) exit 1 }
+    exit 1 }'
+}
+
+# How herdr was installed decides how it updates. herdr update is only for herdr's own installer.
+herdr_kind() {
+  bin="$(command -v herdr)"
+  real="$(readlink -f "$bin" 2>/dev/null || printf '%s' "$bin")"
+  case "$real" in
+    */Cellar/* | /opt/homebrew/* | /home/linuxbrew/*) echo brew ;;
+    */mise/*) echo mise ;;
+    /nix/*) echo nix ;;
+    *) echo direct ;;
+  esac
+}
+
+# github.com redirects releases/latest to releases/tag/v<version>. Reading where it lands
+# needs no API call, so GitHub's 60-an-hour API limit for anonymous users never applies.
+latest_herdr() {
+  u="$(curl -fsSIL -o /dev/null -w '%{url_effective}' --connect-timeout 10 --max-time 20 "$RELEASES_URL" 2>/dev/null || true)"
+  case "$u" in */tag/v[0-9]*) printf '%s' "${u##*/tag/v}" ;; esac
+}
+
+update_herdr() {
+  have="$(herdr_version)"
+  latest="$(latest_herdr)"
+  kind="$(herdr_kind)"
+  if [ -n "$latest" ] && ! ver_lt "$have" "$latest"; then
+    say "herdr: $have, up to date"
+    return 0
+  fi
+  if [ "$MODE" = check ]; then
+    if [ -z "$latest" ]; then
+      say "herdr: $have (could not reach GitHub to check for a newer one)"
+    else
+      say "herdr: $have installed, $latest available ($kind install)"
+      CHANGES=$((CHANGES + 1))
+    fi
+    return 0
+  fi
+  case "$kind" in
+    direct) herdr update || die "herdr update failed. Run it on its own to see why: herdr update" ;;
+    brew) brew upgrade herdr || die "brew upgrade herdr failed" ;;
+    mise)
+      say "herdr: installed with mise, so update it with: mise upgrade herdr"
+      return 0
+      ;;
+    nix)
+      say "herdr: installed with Nix, so update it through your flake or profile"
+      return 0
+      ;;
+  esac
+  now="$(herdr_version)"
+  if [ "$now" = "$have" ]; then say "herdr: $now, up to date"; else say "herdr: $have -> $now"; fi
+}
+
+plugin_json() {
+  herdr plugin list --json 2>/dev/null |
+    jq -c --arg id "$PLUGIN_ID" '.result.plugins[]? | select(.plugin_id == $id)' 2>/dev/null || true
+}
+
+update_plugin() {
+  info="$(plugin_json)"
+  if [ -z "$info" ]; then
+    if [ "$MODE" = check ]; then
+      say "plugin: $PLUGIN_ID is not installed"
+      CHANGES=$((CHANGES + 1))
+    else
+      install_plugin
+    fi
+    return 0
+  fi
+  if [ "$(printf '%s' "$info" | jq -r '.source.kind // empty')" != github ]; then
+    say "plugin: $PLUGIN_ID is not a GitHub install (linked from a folder?), left alone"
+    return 0
+  fi
+  have="$(printf '%s' "$info" | jq -r '.source.resolved_commit // empty')"
+  want="$(git ls-remote "https://github.com/$PLUGIN" HEAD 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+  if [ -z "$want" ]; then
+    say "plugin: could not reach github.com/$PLUGIN, left as it is"
+  elif [ "$have" = "$want" ]; then
+    say "plugin: $PLUGIN_ID $(printf '%.7s' "$have"), up to date"
+  elif [ "$MODE" = check ]; then
+    say "plugin: $PLUGIN_ID $(printf '%.7s' "$have") installed, $(printf '%.7s' "$want") available"
+    CHANGES=$((CHANGES + 1))
+  else
+    # Installing again replaces herdr's managed checkout. Its config folder is kept.
+    herdr plugin install "$PLUGIN" --yes || die "could not update $PLUGIN"
+    say "plugin: $PLUGIN_ID $(printf '%.7s' "$have") -> $(printf '%.7s' "$want")"
+  fi
+}
+
+# herdr's hooks inside Claude, Codex and others report agent status. A herdr update can
+# make them stale, so refresh every installed one that is not current.
+update_integrations() {
+  stale="$(herdr integration status 2>/dev/null |
+    awk -F': ' 'NF > 1 && $2 !~ /^(current|not installed)/ { print $1 }' || true)"
+  if [ -z "$stale" ]; then
+    say "integrations: current"
+    return 0
+  fi
+  for name in $stale; do
+    if [ "$MODE" = check ]; then
+      say "integrations: $name is not current"
+      CHANGES=$((CHANGES + 1))
+    elif herdr integration install "$name" >/dev/null 2>&1; then
+      say "integrations: refreshed $name"
+    else
+      say "warning: could not refresh the $name integration. Run: herdr integration install $name"
+    fi
+  done
+}
+
+# The zsh completion from docs/GUIDE.md goes stale with herdr. Refresh it if it is there.
+update_completion() {
+  f="$HOME/.zfunc/_herdr"
+  [ -f "$f" ] || return 0
+  if herdr completion zsh >"$f.new.$$" 2>/dev/null && [ -s "$f.new.$$" ]; then
+    mv "$f.new.$$" "$f"
+    say "completion: refreshed $f"
+  else
+    rm -f "$f.new.$$"
+  fi
+}
+
+# Updating never restarts herdr. Say so when the running server is older than the binary.
+report_restart() {
+  st="$(herdr status --json 2>/dev/null || true)"
+  [ -n "$st" ] || return 0
+  client="$(printf '%s' "$st" | jq -r '.client.version // empty' 2>/dev/null || true)"
+  server="$(printf '%s' "$st" | jq -r 'if .server.running then .server.version // empty else empty end' 2>/dev/null || true)"
+  need="$(printf '%s' "$st" | jq -r '.update.restart_needed // false' 2>/dev/null || true)"
+  if [ -n "$server" ] && { [ "$need" = true ] || [ "$server" != "$client" ]; }; then
+    say "restart: the running herdr server is $server and the new binary is $client."
+    say "         Panes and agents keep running on the old server. New server features arrive"
+    say "         after a restart: when no agent is mid-task, run herdr server stop, then start herdr."
+  fi
 }
 
 bind_keys() {
@@ -180,9 +366,10 @@ finish() {
 
 Done.
 
-  ctrl+b then Down   Quick Actions. Type "claude", "agy", "codex", "grid", "workers" or "name".
+  ctrl+b then Down   Quick Actions. Type "claude", "agy", "codex", "grid", "workers", "name" or "update".
   ctrl+b then Up     Projects. Add your own first, see docs/GUIDE.md.
   fleet help         Run, delegate to, wait on, read, rename, clear and close a group of agents.
+  herdr-setup update Newest herdr, herdr-plus and these files. herdr-setup check only looks.
 
 Manual: https://mrx-arafat.github.io/herdr-setup/
 EOF
@@ -193,16 +380,45 @@ main() {
   for arg in "$@"; do
     case "$arg" in
       --yes | -y) YES=1 ;;
+      --check) MODE=check ;;
+      --update) MODE=update ;;
       --help | -h) usage; exit 0 ;;
       *) die "unknown option '$arg'. See --help" ;;
     esac
   done
+  CHANGES=0
+  BACKED_UP=0
+  BACKUP="$HOME/.config/herdr/backups/herdr-setup-$(date +%Y%m%d-%H%M%S)-$$"
   check_tools
-  install_plugin
-  install_files
-  link_fleet
-  bind_keys
-  finish
+  case "$MODE" in
+    install)
+      install_plugin
+      install_files
+      link_cmds
+      bind_keys
+      finish
+      ;;
+    check)
+      update_herdr
+      update_plugin
+      update_integrations
+      if [ -n "$(plugin_json)" ]; then install_files; fi
+      report_restart
+      if [ "$CHANGES" -eq 0 ]; then say "Everything is up to date."; else say "$CHANGES update(s) available. Run: herdr-setup update"; fi
+      ;;
+    update)
+      update_herdr
+      update_plugin
+      update_integrations
+      install_files
+      link_cmds
+      update_completion
+      herdr server reload-config >/dev/null 2>&1 || true
+      herdr config check
+      report_restart
+      if [ "$BACKED_UP" -eq 1 ]; then say "Updated. Your old copies of replaced files are in $BACKUP"; else say "Updated."; fi
+      ;;
+  esac
 }
 
 # Everything runs from here, after the whole file has arrived, so a cut-off download never runs half a script.

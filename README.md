@@ -136,12 +136,12 @@ curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install
 1. Checks that herdr 0.7.0 or newer, `jq` and `curl` are installed.
 2. Installs the [herdr-plus](https://github.com/cloudmanic/herdr-plus) plugin, after asking you.
    It asks on your terminal even when piped from `curl`, and `--yes` skips the question.
-3. Downloads `agent-tab.sh`, `fleet.sh` and seven Quick Actions from [`files/`](files/) into `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
-4. Links `fleet` into `~/.local/bin` when that folder is on your `PATH`, otherwise prints an alias line.
+3. Downloads `agent-tab.sh`, `fleet.sh`, `herdr-setup.sh` and eight Quick Actions from [`files/`](files/) into `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
+4. Links `fleet` and `herdr-setup` into `~/.local/bin` when that folder is on your `PATH`, otherwise prints alias lines.
 5. Binds `ctrl+b` `↑` to Projects and `ctrl+b` `↓` to Quick Actions in `~/.config/herdr/config.toml`.
 6. Reloads herdr and runs `herdr config check`.
 
-It never overwrites a file that exists, never replaces an existing `fleet` command, skips keys you already use, and backs up `config.toml` before it edits it.
+It never overwrites a file that exists, never replaces an existing `fleet` or `herdr-setup` command, skips keys you already use, and backs up `config.toml` before it edits it.
 To install from another branch or tag, set `HERDR_SETUP_REF`.
 
 </details>
@@ -203,6 +203,7 @@ Press `ctrl+b` then `?` for every key, or keep the [interactive manual](https://
 | `ctrl+b` `↓`, type `grid` | One tab, four equal panes: Claude, Codex, Agy and a shell. |
 | `ctrl+b` `↓`, type `workers` | Nine ready-made layouts from 2 to 8 agents, or type your own. |
 | `ctrl+b` `↓`, type `name` | Every worker renames itself after its task, like `w1` -> `pr6969-cool-fix`. |
+| `herdr-setup update` | The newest herdr, herdr-plus and setup files. Running agents keep going. |
 | `ctrl+b` `↑` | Your projects: describe one once, then open its whole workspace in one keypress. |
 | `fleet up 6 2 claude,codex` | Six workers in two tabs, Claude and Codex taking turns. |
 | `fleet send`, `wait`, `read` | Hand out tasks, wait for the team, read each answer. Each worker names itself after its task. |
@@ -254,18 +255,22 @@ The full story is in [Run many workers](docs/GUIDE.md#run-many-workers).
 <details>
 <summary><b>Update or uninstall</b></summary>
 
-Update herdr with `herdr update`.
-To refresh a file from this repo, delete your copy and run the installer again, since it never overwrites existing files.
+`herdr-setup update` updates herdr, the herdr-plus plugin, herdr's agent integrations and this setup's files.
+`herdr-setup check` only reports what is out of date.
+Files it replaces are backed up first, and it never restarts herdr, so running agents keep going.
+In Quick Actions, type `update`.
+On an install from before `herdr-setup` existed, run the installer once with `--update`: `curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh -s -- --update`.
+The details are in [Update and uninstall](docs/GUIDE.md#update-and-uninstall).
 
 To remove everything:
 
 ```sh
 herdr plugin uninstall cloudmanic.herdr-plus
-rm ~/.local/bin/fleet
+rm ~/.local/bin/fleet ~/.local/bin/herdr-setup
 ```
 
 Then delete the two `[[keys.command]]` blocks that mention `cloudmanic.herdr-plus` from `~/.config/herdr/config.toml`, and run `herdr server reload-config`.
-Skip the `rm` if the installer printed an alias line instead of linking `fleet`.
+Skip the `rm` for a command the installer printed an alias line for instead of linking it.
 
 </details>
 
@@ -289,7 +294,7 @@ More fixes are in the guide's [Troubleshooting](docs/GUIDE.md#troubleshooting) s
 
 - [`install.sh`](install.sh): the one-line installer.
 - [`files/scripts/`](files/scripts/): `agent-tab.sh` (one tab, one command) and `fleet.sh` (builds and drives workers).
-- [`files/quick-actions/`](files/quick-actions/): the seven Quick Actions.
+- [`files/quick-actions/`](files/quick-actions/): the eight Quick Actions.
 - [`files/worktrees/default.toml`](files/worktrees/default.toml): optional auto-layout for git worktrees.
 - [`files/extras/sync-agent-rules`](files/extras/sync-agent-rules): optional, keeps one rules file for every agent.
 - [`docs/index.html`](docs/index.html): the interactive manual, served by GitHub Pages.

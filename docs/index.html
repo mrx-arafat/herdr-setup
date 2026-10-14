@@ -405,8 +405,8 @@ sh install.sh</pre><button class="copy" type="button" data-copy="s-read">Copy</b
           <ol class="steps">
             <li>Checks that herdr 0.7.0 or newer, jq and curl are installed.</li>
             <li>Installs the herdr-plus plugin (<code class="i">herdr plugin install cloudmanic/herdr-plus</code>) after asking you. It asks on your terminal even when piped, and <code class="i">--yes</code> skips the question.</li>
-            <li>Downloads two scripts (<code class="i">agent-tab.sh</code>, <code class="i">fleet.sh</code>) and seven Quick Actions from this repo into <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/</code>. It never overwrites a file that exists.</li>
-            <li>Links the <code class="i">fleet</code> command into <code class="i">~/.local/bin</code> when that folder is on your PATH, otherwise prints an alias line. It never replaces an existing <code class="i">fleet</code> command.</li>
+            <li>Downloads three scripts (<code class="i">agent-tab.sh</code>, <code class="i">fleet.sh</code>, <code class="i">herdr-setup.sh</code>) and eight Quick Actions from this repo into <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/</code>. It never overwrites a file that exists.</li>
+            <li>Links the <code class="i">fleet</code> and <code class="i">herdr-setup</code> commands into <code class="i">~/.local/bin</code> when that folder is on your PATH, otherwise prints an alias line. It never replaces an existing command of the same name.</li>
             <li>Binds <code class="i">prefix+up</code> to Projects and <code class="i">prefix+down</code> to Quick Actions in <code class="i">~/.config/herdr/config.toml</code>, after a timestamped backup. It skips keys you already use.</li>
             <li>Reloads herdr and runs <code class="i">herdr config check</code>.</li>
           </ol>
@@ -591,6 +591,13 @@ herdr agent list</pre><button class="copy" type="button" data-copy="m-ls">Copy</
 fleet rename w2 pr6969-cool-fix</pre><button class="copy" type="button" data-copy="m-name">Copy</button></div>
           <p class="note">Or type <code class="i">name</code> in Quick Actions. Set <code class="i">FLEET_AUTONAME=0</code> to send tasks exactly as typed.</p>
         </div>
+        <div class="card act ok">
+          <h3>Keep it current <span class="badge ok">safe</span></h3>
+          <p>One command updates herdr, the herdr-plus plugin, herdr's agent integrations and this setup's files. It backs up any file it replaces and never restarts herdr, so running agents keep going.</p>
+          <div class="cmd"><pre id="m-update">herdr-setup check
+herdr-setup update</pre><button class="copy" type="button" data-copy="m-update">Copy</button></div>
+          <p class="note">Or type <code class="i">update</code> in Quick Actions. On an older install that lacks the command, run the installer once with <code class="i">--update</code>.</p>
+        </div>
         <div class="card act warnc">
           <h3>Reset memory <span class="badge warn">loses context</span></h3>
           <p>Claude and Codex workers get <code class="i">/clear</code>, a fresh chat in the same session. Claude's counter then reads <code class="i">0 tokens</code>. Old text stays in the scrollback.</p>
@@ -656,6 +663,7 @@ herdr worktree list</pre><button class="copy" type="button" data-copy="m-wt">Cop
             <tr><td class="m">workers</td><td>Workers</td><td>One of nine layouts, 2 to 8 workers</td></tr>
             <tr><td class="m">workers</td><td>Workers (custom)</td><td>Type a layout, for example <code class="i">6 2 claude,codex</code></td></tr>
             <tr><td class="m">name</td><td>Name workers</td><td>Every worker renames itself after its task: <code class="i">fleet rename</code></td></tr>
+            <tr><td class="m">update</td><td>Update herdr setup</td><td>New tab: <code class="i">herdr-setup update</code></td></tr>
           </tbody>
         </table></div>
         <p class="note">Codex has no <code class="i">--dangerously-skip-sandbox</code> flag. The entry keeps that name and runs the real flag.</p>
@@ -733,7 +741,7 @@ herdr worktree remove --workspace &lt;id&gt;</pre><button class="copy" type="but
           <div class="head-row"><h2>Shell suggestions</h2><span class="badge">optional</span></div>
           <p class="note">Not part of the installer. This is an optional zsh setup, described in the guide's &ldquo;Command suggestions in the shell&rdquo; section: <a href="https://github.com/mrx-arafat/herdr-setup/blob/main/docs/GUIDE.md" target="_blank" rel="noopener noreferrer">docs/GUIDE.md</a>. If you set it up, these keys apply:</p>
           <div class="scroll"><table><tbody id="k-shell"></tbody></table></div>
-          <p class="note">With that zsh setup, refresh herdr's completion after <code class="i">herdr update</code>:</p>
+          <p class="note">With that zsh setup, <code class="i">herdr-setup update</code> refreshes herdr's completion for you. By hand:</p>
           <div class="cmd"><pre id="k-comp">herdr completion zsh &gt; ~/.zfunc/_herdr</pre><button class="copy" type="button" data-copy="k-comp">Copy</button></div>
         </div>
       </div>
@@ -869,6 +877,7 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
             <tr><td>Real Claude, Codex and Agy workers rename their pane, agent and session after their task, mid-task too, and keep their number</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td><code class="i">fleet rename me</code> refuses inside Codex, whose commands carry another pane's <code class="i">HERDR_PANE_ID</code></td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>Installer sandbox suite</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td><code class="i">herdr-setup check</code> and <code class="i">update</code>: a newer herdr, an older herdr-plus, a stale integration, a changed file backed up, a Homebrew herdr</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>All scripts pass shellcheck</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>Linux and Windows</td><td><span class="status open">Not run</span></td></tr>
             <tr><td>Physical key presses (they were driven through herdr's CLI instead)</td><td><span class="status open">Not run</span></td></tr>
@@ -1128,8 +1137,7 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
 
   /* ---------- maintenance ---------- */
   var MAINT = [
-    ['herdr update', 'Newest herdr'],
-    ['herdr completion zsh > ~/.zfunc/_herdr', 'Only if you use the optional zsh setup: refresh tab completion after an update'],
+    ['herdr-setup update', 'Newest herdr, herdr-plus, integrations and setup files'],
     ['herdr integration status', 'Claude, Codex and Agy should say current'],
     ['herdr config check', 'Should print config: ok'],
     ['herdr plugin list', 'herdr-plus should be enabled'],
@@ -1208,7 +1216,9 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
     ['git worktree prune', 'Drop records of deleted worktrees'],
     ['herdr workspace close <id>', 'Close a workspace'],
     ['herdr server stop', 'Stop herdr and every pane'],
-    ['herdr update', 'Update herdr'],
+    ['herdr-setup check', 'What is out of date, changes nothing'],
+    ['herdr-setup update', 'Update herdr, herdr-plus, integrations and setup files'],
+    ['herdr update', 'Update only herdr (herdr\'s own installer)'],
     ['sync-agent-rules', 'Copy ~/AGENTS.md into the Codex and Gemini rules files'],
     ['herdr completion zsh > ~/.zfunc/_herdr', 'Refresh shell completion (optional zsh setup)'],
     ['herdr integration status', 'Are agent integrations current'],

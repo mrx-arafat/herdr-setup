@@ -53,6 +53,7 @@ For a clickable tour, open the [interactive manual](https://mrx-arafat.github.io
 | `ctrl+b` then `↓`, type `grid`, `Enter` | One tab with a balanced 2x2 grid: Claude, Codex, Agy and a plain shell. |
 | `ctrl+b` then `↓`, type `workers`, pick a layout | 2 to 8 workers in one or more tabs, for example six workers as two tabs of three. |
 | `ctrl+b` then `↓`, type `name`, `Enter` | Every worker renames itself after its task, like `w1` -> `pr6969-cool-fix`. |
+| `ctrl+b` then `↓`, type `update`, `Enter` | A new tab runs `herdr-setup update`: the newest herdr, herdr-plus and setup files. |
 | `ctrl+b` then `↑`, pick a project, `Enter` | A new workspace opens for that project with a `claude` tab and a `terminal` tab. |
 | `fleet send w2 "fix the failing test"` | Types that task into worker 2. `fleet wait`, `fleet read`, `fleet clear` and `fleet close` do the rest. |
 
@@ -184,17 +185,18 @@ What the installer does, in order:
    The question appears on your terminal even when the script is piped from `curl`.
    `--yes` skips it.
    If there is no terminal to ask on, the installer stops and tells you to rerun with `--yes`.
-3. Downloads `agent-tab.sh`, `fleet.sh` and seven Quick Actions from the [`files/`](../files/) folder of this repo into the plugin's config folder.
+3. Downloads `agent-tab.sh`, `fleet.sh`, `herdr-setup.sh` and eight Quick Actions from the [`files/`](../files/) folder of this repo into the plugin's config folder.
    The folders are `scripts/` and `quick-actions/` inside `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
-4. Links the `fleet` command into `~/.local/bin` when that folder is on your `PATH`.
-   Otherwise it prints an alias line for you to copy.
+4. Links the `fleet` and `herdr-setup` commands into `~/.local/bin` when that folder is on your `PATH`.
+   Otherwise it prints alias lines for you to copy.
 5. Adds two key bindings to `~/.config/herdr/config.toml`: `prefix+up` for Projects and `prefix+down` for Quick Actions.
 6. Reloads herdr and validates the config with `herdr config check`.
 
 It is safe to run again.
 It never overwrites a file that already exists.
 It makes a timestamped backup of `config.toml` before it edits it.
-It skips a key binding you already use, and it never replaces an existing `fleet` command.
+It skips a key binding you already use, and it never replaces an existing `fleet` or `herdr-setup` command.
+To bring an existing install up to date, use `herdr-setup update`, see [Update and uninstall](#update-and-uninstall).
 
 To install from a different branch or tag, set `HERDR_SETUP_REF` (the default is `main`):
 
@@ -531,8 +533,7 @@ Everything keeps running and `herdr` brings it back.
 Once a week, or after an update:
 
 ```bash
-herdr update                                   # newest herdr
-herdr completion zsh > ~/.zfunc/_herdr         # refresh tab completion, see the suggestions section
+herdr-setup update                             # newest herdr, herdr-plus, integrations, setup files, zsh completion
 herdr integration status                       # are agent integrations current?
 herdr config check                             # config still valid?
 herdr plugin list                              # plugins installed and enabled?
@@ -780,14 +781,16 @@ All plugin files live in herdr's managed plugin config folder:
 │   ├── agent-grid-2x2.toml
 │   ├── workers.toml
 │   ├── workers-custom.toml
-│   └── name-workers.toml
+│   ├── name-workers.toml
+│   └── update-setup.toml
 ├── scripts/
 │   ├── agent-tab.sh          opens one tab and runs one command
-│   └── fleet.sh              builds worker grids and drives the workers
+│   ├── fleet.sh              builds worker grids and drives the workers
+│   └── herdr-setup.sh        checks for and installs updates
 └── worktrees/                optional, see the git worktrees section
 ```
 
-`~/.local/bin/fleet` is a link to `scripts/fleet.sh`.
+`~/.local/bin/fleet` is a link to `scripts/fleet.sh`, and `~/.local/bin/herdr-setup` a link to `scripts/herdr-setup.sh`.
 Herdr keeps the plugin config folder across plugin updates and uninstalls.
 
 The source of every file is in this repo:
@@ -796,6 +799,7 @@ The source of every file is in this repo:
 | --- | --- | --- |
 | `scripts/agent-tab.sh` | [files/scripts/agent-tab.sh](../files/scripts/agent-tab.sh) | Opens one tab in the current workspace and runs one command in it. |
 | `scripts/fleet.sh` | [files/scripts/fleet.sh](../files/scripts/fleet.sh) | Builds worker grids and drives the workers. |
+| `scripts/herdr-setup.sh` | [files/scripts/herdr-setup.sh](../files/scripts/herdr-setup.sh) | `herdr-setup check` and `herdr-setup update`. |
 | `quick-actions/claude-dangerously-skip-permission.toml` | [files/quick-actions/claude-dangerously-skip-permission.toml](../files/quick-actions/claude-dangerously-skip-permission.toml) | The Claude launcher. |
 | `quick-actions/agy-dangerously-skip-permission.toml` | [files/quick-actions/agy-dangerously-skip-permission.toml](../files/quick-actions/agy-dangerously-skip-permission.toml) | The Agy launcher. |
 | `quick-actions/codex-dangerously-skip-sandbox.toml` | [files/quick-actions/codex-dangerously-skip-sandbox.toml](../files/quick-actions/codex-dangerously-skip-sandbox.toml) | The Codex launcher. |
@@ -803,6 +807,7 @@ The source of every file is in this repo:
 | `quick-actions/workers.toml` | [files/quick-actions/workers.toml](../files/quick-actions/workers.toml) | The **Workers** preset list. |
 | `quick-actions/workers-custom.toml` | [files/quick-actions/workers-custom.toml](../files/quick-actions/workers-custom.toml) | The **Workers (custom)** form. |
 | `quick-actions/name-workers.toml` | [files/quick-actions/name-workers.toml](../files/quick-actions/name-workers.toml) | **Name workers**: every worker renames itself after its task. |
+| `quick-actions/update-setup.toml` | [files/quick-actions/update-setup.toml](../files/quick-actions/update-setup.toml) | **Update herdr setup**: runs `herdr-setup update` in a new tab. |
 | `worktrees/default.toml` | [files/worktrees/default.toml](../files/worktrees/default.toml) | Optional. The installer does not create it. |
 
 To copy the files yourself instead of running the installer, use a copy of this repo:
@@ -1005,7 +1010,7 @@ herdr integration install antigravity-cli
 
 1. `herdr plugin list` shows `cloudmanic.herdr-plus (Herdr Plus)` as `enabled`.
 2. `herdr config check` prints `config: ok`.
-3. `ctrl+b` then `↓` lists the launchers, **Agent Grid 2x2**, **Workers**, **Workers (custom)** and **Name workers**.
+3. `ctrl+b` then `↓` lists the launchers, **Agent Grid 2x2**, **Workers**, **Workers (custom)**, **Name workers** and **Update herdr setup**.
 4. Typing `claude` and pressing `Enter` opens a `claude` tab that shows `bypass permissions on`.
 5. `fleet help` prints the command list.
 6. `fleet up 2` opens two workers and prints `ready` for both.
@@ -1057,24 +1062,45 @@ Install plugins only from authors you trust.
 
 ## Update and uninstall
 
-Update herdr:
+One command keeps everything current: herdr itself, the herdr-plus plugin, herdr's agent integrations and this setup's scripts and Quick Actions.
 
 ```bash
-herdr update
+herdr-setup check     # what is out of date, changes nothing
+herdr-setup update    # update all of it
 ```
 
-To refresh a file from this repo, delete your copy of it and run the installer again.
-The installer never overwrites a file that exists.
+In the Quick Actions picker, type `update` to run the update in a new tab.
+Both commands download the newest installer from this repo and run it, so the update logic is always current.
+
+What `update` does:
+
+1. Updates herdr the way it was installed: `herdr update` for herdr's own installer, `brew upgrade herdr` for Homebrew.
+   For mise or Nix it tells you the command instead.
+2. Reinstalls herdr-plus when GitHub has a newer commit than yours. Its config folder, with your projects and Quick Actions, is kept.
+3. Refreshes any installed agent integration that `herdr integration status` does not list as current.
+4. Replaces each script or Quick Action from this repo that differs from the newest one, after copying yours to `~/.config/herdr/backups/herdr-setup-<time>/`.
+   Your own extra files in those folders are never touched.
+5. Refreshes `~/.zfunc/_herdr` if you use the optional zsh completion.
+
+It never restarts herdr, so panes and agents keep running.
+When the running server is older than the new binary, it says so.
+New server features arrive after you restart: when no agent is mid-task, run `herdr server stop`, then start herdr again.
+
+On an install from before `herdr-setup` existed, run the installer once with `--update` to get it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh -s -- --update
+```
 
 To remove the setup:
 
 ```bash
 herdr plugin uninstall cloudmanic.herdr-plus    # remove the plugin
-rm ~/.local/bin/fleet                           # remove the fleet link
+rm ~/.local/bin/fleet ~/.local/bin/herdr-setup  # remove the command links
 ```
 
 After uninstalling, delete the two `[[keys.command]]` blocks that mention `cloudmanic.herdr-plus` from `~/.config/herdr/config.toml` and run `herdr server reload-config`.
-Skip the `rm` if the installer printed an alias line instead of linking `fleet`.
+Skip the `rm` for a command the installer printed an alias line for instead of linking it.
 Herdr keeps the plugin's config folder when you uninstall, so your projects, launchers and scripts survive a reinstall.
 
 ## Optional extras
@@ -1153,6 +1179,9 @@ Verified:
 13. `fleet rename`, with Claude Code 2.1.299, Codex 0.162.1 and Agy 1.3.5 workers: each renamed its pane label, herdr agent name and own session after its task, both when asked by `fleet rename` and from the request `fleet send` adds, including while busy.
     A renamed worker kept its number through a second rename and a pane renamed by hand, `fleet close` removed its record, and duplicate or unusable names were refused.
     Inside Codex, `fleet rename me` refused instead of renaming the wrong pane, because Codex's commands carried another pane's `HERDR_PANE_ID`.
+14. `herdr-setup check` on a real install reported herdr 0.9.3 installed and 0.9.4 available, herdr-plus up to date and the integrations current.
+    `--update` added the new files and the `herdr-setup` link and left every unchanged file alone.
+    The sandbox suite covers check and update with a newer herdr, an older herdr-plus, a stale integration, a changed file (replaced, old copy backed up), a second run with nothing to do, a Homebrew herdr, and the `herdr-setup` command itself.
 
 Not verified:
 
