@@ -7,6 +7,9 @@
 #   sh tests/sandbox.sh
 set -u
 
+# Run the same inside a herdr pane as in CI: the installer behaves differently inside herdr.
+unset HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HERDR_SOCKET_PATH HERDR_BIN_PATH
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SB="$(mktemp -d "${TMPDIR:-/tmp}/herdr-setup-test.XXXXXX")"
 BASE="file://$ROOT/files"
@@ -228,9 +231,23 @@ chmod +x "$SB/brewbin/brew"
 : >"$H17/.stub-log"
 HOME="$H17" PATH="$H17/.local/bin:$SB/brewbin:$SB/bin:$SYS_PATH" HERDR_SETUP_BASE="$BASE" \
   sh "$ROOT/install.sh" --update </dev/null >"$SB/t17.log" 2>&1
+check "T17 brew update ran first" grep -qx 'brew update' "$H17/.stub-log"
 check "T17 brew upgrade herdr ran" grep -qx 'brew upgrade herdr' "$H17/.stub-log"
 # shellcheck disable=SC2016
 check "T17 herdr update not used" sh -c '! grep -qx "herdr update" "$1"' _ "$H17/.stub-log"
+
+# ---------------------------------------------------------------- T19 inside a herdr pane herdr is left for a plain terminal
+H19="$(home 19)"
+run "$H19" --yes >/dev/null 2>&1
+echo aaaaaaaaaaaa >"$H19/.stub-installed"
+: >"$H19/.stub-log"
+(HERDR_ENV=1 run "$H19" --update >"$SB/t19.log" 2>&1)
+check "T19 update inside herdr exits 0" [ "$?" -eq 0 ]
+# shellcheck disable=SC2016
+check "T19 herdr update not run inside herdr" sh -c '! grep -qx "herdr update" "$1"' _ "$H19/.stub-log"
+check "T19 told to use a plain terminal" grep -q 'Open a plain terminal' "$SB/t19.log"
+check "T19 plugin still updated" grep -qx 'herdr plugin install cloudmanic/herdr-plus --yes' "$H19/.stub-log"
+check "T19 summary names the gap" grep -q 'except herdr itself' "$SB/t19.log"
 
 # ---------------------------------------------------------------- T18 the herdr-setup command runs the newest installer
 HOME="$H14" PATH="$H14/.local/bin:$SB/bin:$SYS_PATH" HERDR_SETUP_BASE="$BASE" \

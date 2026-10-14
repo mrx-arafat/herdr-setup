@@ -8,6 +8,8 @@
 # Both download the newest installer from GitHub and run it, so the update logic is
 # always current. Neither restarts herdr: running panes and agents keep going, and
 # the update says when a restart would bring in new server features.
+# herdr refuses to update itself from inside a herdr pane. Run update in a plain
+# terminal to include it; inside herdr everything else is still updated.
 #
 # Environment:
 #   HERDR_SETUP_REF             branch or tag to update from (default: main)

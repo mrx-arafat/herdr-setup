@@ -53,7 +53,7 @@ For a clickable tour, open the [interactive manual](https://mrx-arafat.github.io
 | `ctrl+b` then `↓`, type `grid`, `Enter` | One tab with a balanced 2x2 grid: Claude, Codex, Agy and a plain shell. |
 | `ctrl+b` then `↓`, type `workers`, pick a layout | 2 to 8 workers in one or more tabs, for example six workers as two tabs of three. |
 | `ctrl+b` then `↓`, type `name`, `Enter` | Every worker renames itself after its task, like `w1` -> `pr6969-cool-fix`. |
-| `ctrl+b` then `↓`, type `update`, `Enter` | A new tab runs `herdr-setup update`: the newest herdr, herdr-plus and setup files. |
+| `ctrl+b` then `↓`, type `update`, `Enter` | A new tab runs `herdr-setup update` for herdr-plus, integrations and setup files. herdr itself needs a plain terminal. |
 | `ctrl+b` then `↑`, pick a project, `Enter` | A new workspace opens for that project with a `claude` tab and a `terminal` tab. |
 | `fleet send w2 "fix the failing test"` | Types that task into worker 2. `fleet wait`, `fleet read`, `fleet clear` and `fleet close` do the rest. |
 
@@ -1069,13 +1069,15 @@ herdr-setup check     # what is out of date, changes nothing
 herdr-setup update    # update all of it
 ```
 
-In the Quick Actions picker, type `update` to run the update in a new tab.
+Run `update` in a plain terminal, not in a herdr pane: herdr refuses to update itself from inside herdr.
+Inside a herdr pane, and from the Quick Actions picker (type `update`), it updates everything else and tells you that herdr itself is left for a plain terminal.
 Both commands download the newest installer from this repo and run it, so the update logic is always current.
 
 What `update` does:
 
-1. Updates herdr the way it was installed: `herdr update` for herdr's own installer, `brew upgrade herdr` for Homebrew.
+1. Updates herdr the way it was installed, with the command herdr itself names: `herdr update` for herdr's own installer, `brew update && brew upgrade herdr` for Homebrew.
    For mise or Nix it tells you the command instead.
+   `herdr update` runs without a terminal to answer it, so if a release ever needs the running server stopped, herdr declines rather than closing your panes.
 2. Reinstalls herdr-plus when GitHub has a newer commit than yours. Its config folder, with your projects and Quick Actions, is kept.
 3. Refreshes any installed agent integration that `herdr integration status` does not list as current.
 4. Replaces each script or Quick Action from this repo that differs from the newest one, after copying yours to `~/.config/herdr/backups/herdr-setup-<time>/`.

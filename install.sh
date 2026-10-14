@@ -226,15 +226,27 @@ update_herdr() {
     fi
     return 0
   fi
+  # The update commands are the ones herdr's own update code names for each kind of install.
   case "$kind" in
-    direct) herdr update || die "herdr update failed. Run it on its own to see why: herdr update" ;;
-    brew) brew upgrade herdr || die "brew upgrade herdr failed" ;;
+    direct)
+      if [ "${HERDR_ENV:-}" = 1 ]; then
+        # herdr refuses to update itself from inside a herdr pane.
+        say "herdr: ${latest:-a newer version} is available, but herdr only updates itself outside herdr."
+        say "       Open a plain terminal (not a herdr pane) and run: herdr-setup update"
+        HERDR_SKIPPED=1
+        return 0
+      fi
+      # No terminal on stdin: if a release ever needs the running server stopped, herdr
+      # declines instead of asking, so this can never close your panes.
+      herdr update </dev/null || die "herdr update failed. Run it on its own to see why: herdr update"
+      ;;
+    brew) { brew update && brew upgrade herdr; } || die "brew upgrade herdr failed" ;;
     mise)
       say "herdr: installed with mise, so update it with: mise upgrade herdr"
       return 0
       ;;
     nix)
-      say "herdr: installed with Nix, so update it through your flake or profile"
+      say "herdr: installed with Nix, so update it with nix profile upgrade, or update your flake input"
       return 0
       ;;
   esac
@@ -388,6 +400,7 @@ main() {
   done
   CHANGES=0
   BACKED_UP=0
+  HERDR_SKIPPED=0
   BACKUP="$HOME/.config/herdr/backups/herdr-setup-$(date +%Y%m%d-%H%M%S)-$$"
   check_tools
   case "$MODE" in
@@ -416,7 +429,10 @@ main() {
       herdr server reload-config >/dev/null 2>&1 || true
       herdr config check
       report_restart
-      if [ "$BACKED_UP" -eq 1 ]; then say "Updated. Your old copies of replaced files are in $BACKUP"; else say "Updated."; fi
+      done_msg="Updated."
+      [ "$HERDR_SKIPPED" -eq 0 ] || done_msg="Updated everything except herdr itself, see above."
+      if [ "$BACKED_UP" -eq 1 ]; then done_msg="$done_msg Your old copies of replaced files are in $BACKUP"; fi
+      say "$done_msg"
       ;;
   esac
 }

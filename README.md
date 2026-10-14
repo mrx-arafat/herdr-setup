@@ -258,7 +258,8 @@ The full story is in [Run many workers](docs/GUIDE.md#run-many-workers).
 `herdr-setup update` updates herdr, the herdr-plus plugin, herdr's agent integrations and this setup's files.
 `herdr-setup check` only reports what is out of date.
 Files it replaces are backed up first, and it never restarts herdr, so running agents keep going.
-In Quick Actions, type `update`.
+Run it in a plain terminal to include herdr itself, which refuses to update from inside a herdr pane.
+In Quick Actions, type `update` for everything else.
 On an install from before `herdr-setup` existed, run the installer once with `--update`: `curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install.sh | sh -s -- --update`.
 The details are in [Update and uninstall](docs/GUIDE.md#update-and-uninstall).
 
