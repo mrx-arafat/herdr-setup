@@ -1181,8 +1181,11 @@ Verified:
 13. `fleet rename`, with Claude Code 2.1.299, Codex 0.162.1 and Agy 1.3.5 workers: each renamed its pane label, herdr agent name and own session after its task, both when asked by `fleet rename` and from the request `fleet send` adds, including while busy.
     A renamed worker kept its number through a second rename and a pane renamed by hand, `fleet close` removed its record, and duplicate or unusable names were refused.
     Inside Codex, `fleet rename me` refused instead of renaming the wrong pane, because Codex's commands carried another pane's `HERDR_PANE_ID`.
-14. `herdr-setup check` on a real install reported herdr 0.9.3 installed and 0.9.4 available, herdr-plus up to date and the integrations current.
-    `--update` added the new files and the `herdr-setup` link and left every unchanged file alone.
+14. `herdr-setup update`, run from GitHub on a real install with 21 agents running.
+    Inside a herdr pane it left herdr for a plain terminal, as herdr requires, and replaced the two changed setup files after backing them up.
+    From a plain terminal it updated herdr 0.9.3 to 0.9.4, refreshed the Codex integration the new herdr flagged as stale, and advised a restart; the server stayed on 0.9.3 and all 21 agents kept running.
+    A following `herdr-setup check` reported everything up to date.
+    herdr-plus was already current, so its reinstall path is covered by the sandbox suite only.
     The sandbox suite covers check and update with a newer herdr, an older herdr-plus, a stale integration, a changed file (replaced, old copy backed up), a second run with nothing to do, a Homebrew herdr, and the `herdr-setup` command itself.
 
 Not verified:
