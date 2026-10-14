@@ -54,10 +54,11 @@ check "T1 fresh install exits 0" [ "$?" -eq 0 ]
 all_same=0
 for f in scripts/agent-tab.sh scripts/fleet.sh quick-actions/claude-dangerously-skip-permission.toml \
   quick-actions/agy-dangerously-skip-permission.toml quick-actions/codex-dangerously-skip-sandbox.toml \
-  quick-actions/agent-grid-2x2.toml quick-actions/workers.toml quick-actions/workers-custom.toml; do
+  quick-actions/agent-grid-2x2.toml quick-actions/workers.toml quick-actions/workers-custom.toml \
+  quick-actions/name-workers.toml; do
   cmp -s "$ROOT/files/$f" "$H1/$CFG_REL/$f" || all_same=1
 done
-check "T1 all 8 files installed byte for byte" [ "$all_same" -eq 0 ]
+check "T1 all 9 files installed byte for byte" [ "$all_same" -eq 0 ]
 check "T1 fleet.sh is executable" [ -x "$H1/$CFG_REL/scripts/fleet.sh" ]
 check "T1 agent-tab.sh is executable" [ -x "$H1/$CFG_REL/scripts/agent-tab.sh" ]
 check "T1 fleet linked into ~/.local/bin" [ "$(readlink "$H1/.local/bin/fleet")" = "$H1/$CFG_REL/scripts/fleet.sh" ]
@@ -70,7 +71,7 @@ cp "$H1/.config/herdr/config.toml" "$SB/t2.before"
 run "$H1" --yes >"$SB/t2.log" 2>&1
 check "T2 re-run exits 0" [ "$?" -eq 0 ]
 check "T2 config.toml unchanged" cmp -s "$SB/t2.before" "$H1/.config/herdr/config.toml"
-check "T2 every file left alone" [ "$(grep -c 'left alone (exists)' "$SB/t2.log")" -eq 8 ]
+check "T2 every file left alone" [ "$(grep -c 'left alone (exists)' "$SB/t2.log")" -eq 9 ]
 check "T2 fleet already linked" grep -q 'fleet: already linked' "$SB/t2.log"
 
 # ---------------------------------------------------------------- T3 existing key is never clobbered

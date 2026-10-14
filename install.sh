@@ -10,7 +10,7 @@
 # What it does:
 #   1. Checks that herdr (0.7.0 or newer), jq and curl are installed.
 #   2. Installs the herdr-plus plugin (cloudmanic/herdr-plus) after asking you.
-#   3. Downloads two scripts and six Quick Actions from this repo into the plugin config dir.
+#   3. Downloads two scripts and seven Quick Actions from this repo into the plugin config dir.
 #   4. Links the `fleet` command into ~/.local/bin when that folder is on your PATH.
 #   5. Binds prefix+up to Projects and prefix+down to Quick Actions in herdr's config.toml.
 #   6. Reloads herdr and validates the config.
@@ -38,7 +38,7 @@ PLUGIN_ID="cloudmanic.herdr-plus"
 KEYS_FILE="$HOME/.config/herdr/config.toml"
 
 SCRIPTS="agent-tab.sh fleet.sh"
-ACTIONS="claude-dangerously-skip-permission agy-dangerously-skip-permission codex-dangerously-skip-sandbox agent-grid-2x2 workers workers-custom"
+ACTIONS="claude-dangerously-skip-permission agy-dangerously-skip-permission codex-dangerously-skip-sandbox agent-grid-2x2 workers workers-custom name-workers"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -180,9 +180,9 @@ finish() {
 
 Done.
 
-  ctrl+b then Down   Quick Actions. Type "claude", "agy", "codex", "grid" or "workers".
+  ctrl+b then Down   Quick Actions. Type "claude", "agy", "codex", "grid", "workers" or "name".
   ctrl+b then Up     Projects. Add your own first, see docs/GUIDE.md.
-  fleet help         Run, delegate to, wait on, read, clear and close a group of agents.
+  fleet help         Run, delegate to, wait on, read, rename, clear and close a group of agents.
 
 Manual: https://mrx-arafat.github.io/herdr-setup/
 EOF

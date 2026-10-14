@@ -52,6 +52,7 @@ For a clickable tour, open the [interactive manual](https://mrx-arafat.github.io
 | `ctrl+b` then `↓`, type `codex`, `Enter` | A new tab opens in your current folder and runs `codex --dangerously-bypass-approvals-and-sandbox`. |
 | `ctrl+b` then `↓`, type `grid`, `Enter` | One tab with a balanced 2x2 grid: Claude, Codex, Agy and a plain shell. |
 | `ctrl+b` then `↓`, type `workers`, pick a layout | 2 to 8 workers in one or more tabs, for example six workers as two tabs of three. |
+| `ctrl+b` then `↓`, type `name`, `Enter` | Every worker renames itself after its task, like `w1` -> `pr6969-cool-fix`. |
 | `ctrl+b` then `↑`, pick a project, `Enter` | A new workspace opens for that project with a `claude` tab and a `terminal` tab. |
 | `fleet send w2 "fix the failing test"` | Types that task into worker 2. `fleet wait`, `fleet read`, `fleet clear` and `fleet close` do the rest. |
 
@@ -183,7 +184,7 @@ What the installer does, in order:
    The question appears on your terminal even when the script is piped from `curl`.
    `--yes` skips it.
    If there is no terminal to ask on, the installer stops and tells you to rerun with `--yes`.
-3. Downloads `agent-tab.sh`, `fleet.sh` and six Quick Actions from the [`files/`](../files/) folder of this repo into the plugin's config folder.
+3. Downloads `agent-tab.sh`, `fleet.sh` and seven Quick Actions from the [`files/`](../files/) folder of this repo into the plugin's config folder.
    The folders are `scripts/` and `quick-actions/` inside `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
 4. Links the `fleet` command into `~/.local/bin` when that folder is on your `PATH`.
    Otherwise it prints an alias line for you to copy.
@@ -378,6 +379,8 @@ FLEET_CODEX_ARGS="--sandbox workspace-write --ask-for-approval on-request" fleet
 | `FLEET_FOCUS=0` | Build the workers without switching to the new tab. |
 | `FLEET_TIMEOUT` | How long `wait` and `send --wait` block, in milliseconds. The default is 600000 (10 minutes). |
 | `FLEET_START_MS` | How long `fleet wait` looks for a turn to start, in milliseconds. The default is 3000. |
+| `FLEET_AUTONAME=0` | Send tasks exactly as typed, without asking workers to name themselves. |
+| `FLEET_STATE_DIR` | Where renamed workers' numbers are kept. The default is `~/.local/state/fleet`. |
 
 ## Delegate work to workers
 
@@ -402,9 +405,13 @@ fleet read w2 120              # the last 120 lines from worker 2
 | Target | Means |
 | --- | --- |
 | `w3` or `3` | One worker. |
+| `pr6969-cool-fix` | One worker, by the name it got from its task. |
 | `w1,w4` | Several workers. |
 | `all` | Every worker in this workspace. |
 | `idle` | Only workers that are idle or done right now. |
+
+Each task also asks the worker to name itself after it, so `w2` becomes something like `fix-flaky-orders` and stays reachable as `w2`.
+See [Name workers after their work](#name-workers-after-their-work).
 
 `fleet send --wait <who> "<task>"` sends and then blocks until all of them finish.
 Use it when you want one command that hands out work and returns with the results ready to read.
@@ -429,6 +436,8 @@ herdr agent prompt my-app-w1 "Summarize the open TODOs in src/" --wait --timeout
 herdr agent read my-app-w1 --source recent-unwrapped --lines 120
 ```
 
+After a worker is renamed, its herdr agent takes the new name, so use that name or the pane id.
+
 ### Avoid workers stepping on each other
 
 Workers in one tab share one folder.
@@ -452,11 +461,34 @@ With the optional [worktree auto-layout](#optional-auto-layout-for-git-worktrees
 
 | Command or key | Shows |
 | --- | --- |
-| `fleet ls` | Every worker in this workspace with its agent, status, tab and pane. |
+| `fleet ls` | Every worker in this workspace with its number, name, agent, status, tab and pane. |
 | `herdr agent list` | Every agent in every workspace, as JSON. |
 | The sidebar | Each workspace's agents as `working`, `blocked`, `done` or `idle`. |
 | `ctrl+b` then `g` | Jump to any agent or terminal. |
 | `fleet focus w3` | Jump straight to worker 3. |
+
+### Name workers after their work
+
+Workers start as `w1`, `w2` and so on.
+Once they have work, give each one a name you can spot, like `w1` -> `pr6969-cool-fix`.
+
+```bash
+fleet rename                       # every worker names itself after its current task
+fleet rename w2 pr6969-cool-fix    # or name one yourself
+```
+
+A rename changes three things at once: the pane label, the herdr agent name, and the agent's own session name (`/rename`, which Claude, Codex and Agy all accept, even mid-task).
+`fleet send` also asks each worker to name itself after the task it gets, so most workers are named without you doing anything.
+Set `FLEET_AUTONAME=0` to send tasks exactly as typed.
+In the Quick Actions picker, type `name` for the same thing as `fleet rename`.
+
+A renamed worker keeps its number, so `fleet send w2 ...` and `fleet send pr6969-cool-fix ...` reach the same worker.
+Fleet keeps that number in `~/.local/state/fleet`, so it survives a herdr restart.
+Names use lowercase letters, digits, `-` and `_`, start with a letter, and are at most 32 characters; fleet tidies `PR #6969 Cool fix` into `pr-6969-cool-fix`.
+
+An agent names its own pane with `fleet rename me <name>`.
+Codex runs its commands from a shared background server, so it cannot always tell which pane it is in.
+Then `rename me` refuses instead of guessing, and the agent uses the pane id that `fleet send` and `fleet rename` give it: `fleet rename w2:p4 <name>`.
 
 ### Reset a worker's memory
 
@@ -747,7 +779,8 @@ All plugin files live in herdr's managed plugin config folder:
 │   ├── codex-dangerously-skip-sandbox.toml
 │   ├── agent-grid-2x2.toml
 │   ├── workers.toml
-│   └── workers-custom.toml
+│   ├── workers-custom.toml
+│   └── name-workers.toml
 ├── scripts/
 │   ├── agent-tab.sh          opens one tab and runs one command
 │   └── fleet.sh              builds worker grids and drives the workers
@@ -769,6 +802,7 @@ The source of every file is in this repo:
 | `quick-actions/agent-grid-2x2.toml` | [files/quick-actions/agent-grid-2x2.toml](../files/quick-actions/agent-grid-2x2.toml) | One tab with Claude, Codex, Agy and a shell in a 2x2 grid. |
 | `quick-actions/workers.toml` | [files/quick-actions/workers.toml](../files/quick-actions/workers.toml) | The **Workers** preset list. |
 | `quick-actions/workers-custom.toml` | [files/quick-actions/workers-custom.toml](../files/quick-actions/workers-custom.toml) | The **Workers (custom)** form. |
+| `quick-actions/name-workers.toml` | [files/quick-actions/name-workers.toml](../files/quick-actions/name-workers.toml) | **Name workers**: every worker renames itself after its task. |
 | `worktrees/default.toml` | [files/worktrees/default.toml](../files/worktrees/default.toml) | Optional. The installer does not create it. |
 
 To copy the files yourself instead of running the installer, use a copy of this repo:
@@ -971,7 +1005,7 @@ herdr integration install antigravity-cli
 
 1. `herdr plugin list` shows `cloudmanic.herdr-plus (Herdr Plus)` as `enabled`.
 2. `herdr config check` prints `config: ok`.
-3. `ctrl+b` then `↓` lists the launchers, **Agent Grid 2x2**, **Workers** and **Workers (custom)**.
+3. `ctrl+b` then `↓` lists the launchers, **Agent Grid 2x2**, **Workers**, **Workers (custom)** and **Name workers**.
 4. Typing `claude` and pressing `Enter` opens a `claude` tab that shows `bypass permissions on`.
 5. `fleet help` prints the command list.
 6. `fleet up 2` opens two workers and prints `ready` for both.
@@ -1116,6 +1150,9 @@ Verified:
 11. `sync-agent-rules` was run three times with identical results.
     Real Codex and Agy sessions were confirmed to read the synced rules: both quoted them from a neutral folder with no project files of its own.
 12. `fleet.sh`, `agent-tab.sh` and `install.sh` pass `shellcheck`, and CI lints every shell script in the repo with it.
+13. `fleet rename`, with Claude Code 2.1.299, Codex 0.162.1 and Agy 1.3.5 workers: each renamed its pane label, herdr agent name and own session after its task, both when asked by `fleet rename` and from the request `fleet send` adds, including while busy.
+    A renamed worker kept its number through a second rename and a pane renamed by hand, `fleet close` removed its record, and duplicate or unusable names were refused.
+    Inside Codex, `fleet rename me` refused instead of renaming the wrong pane, because Codex's commands carried another pane's `HERDR_PANE_ID`.
 
 Not verified:
 
@@ -1125,3 +1162,7 @@ Not verified:
 3. Whether Agy's own approval mode is fully off.
    Agy accepts the flag and starts, but its screen has no banner to confirm it.
 4. A clear command for Agy workers.
+5. A renamed worker's number across a real herdr server restart.
+   Fleet keeps it on disk, since herdr saves pane labels and agent names but not pane metadata.
+   No restart was run.
+6. Typing `name` in the Quick Actions picker; the **Name workers** command line itself was run.

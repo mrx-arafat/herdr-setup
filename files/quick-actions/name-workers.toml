@@ -1,0 +1,6 @@
+# Type "name" in the Quick Actions picker. Every fleet worker in this workspace names
+# itself after the task it is on, like w1 -> pr6969-cool-fix: its pane, its herdr agent
+# and its own session (/rename). Same as running: fleet rename all
+name = "Name workers"
+description = "after their current task"
+command = "sh \"$HOME/.config/herdr/plugins/config/cloudmanic.herdr-plus/scripts/fleet.sh\" rename all"

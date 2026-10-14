@@ -58,6 +58,7 @@ Claude Code, Codex and Agy run side by side, started in three keystrokes and set
       <b>Hand out the work</b><br>
       <code>fleet send w2 "fix the flaky orders test"</code> gives worker 2 its task.
       <code>fleet wait all</code> waits for the whole team, and <code>fleet read w2</code> shows you what it did.
+      Each worker names itself after its task, so <code>w2</code> turns into something like <code>fix-flaky-orders</code>.
     </td>
     <td width="50%" valign="top">
       <img src="docs/assets/icons/safe.svg" width="28" height="28" alt="Shield with a check mark icon"><br>
@@ -135,7 +136,7 @@ curl -fsSL https://raw.githubusercontent.com/mrx-arafat/herdr-setup/main/install
 1. Checks that herdr 0.7.0 or newer, `jq` and `curl` are installed.
 2. Installs the [herdr-plus](https://github.com/cloudmanic/herdr-plus) plugin, after asking you.
    It asks on your terminal even when piped from `curl`, and `--yes` skips the question.
-3. Downloads `agent-tab.sh`, `fleet.sh` and six Quick Actions from [`files/`](files/) into `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
+3. Downloads `agent-tab.sh`, `fleet.sh` and seven Quick Actions from [`files/`](files/) into `~/.config/herdr/plugins/config/cloudmanic.herdr-plus/`.
 4. Links `fleet` into `~/.local/bin` when that folder is on your `PATH`, otherwise prints an alias line.
 5. Binds `ctrl+b` `↑` to Projects and `ctrl+b` `↓` to Quick Actions in `~/.config/herdr/config.toml`.
 6. Reloads herdr and runs `herdr config check`.
@@ -201,9 +202,10 @@ Press `ctrl+b` then `?` for every key, or keep the [interactive manual](https://
 | `ctrl+b` `↓`, type `agy` | A new tab running Agy in your current folder. |
 | `ctrl+b` `↓`, type `grid` | One tab, four equal panes: Claude, Codex, Agy and a shell. |
 | `ctrl+b` `↓`, type `workers` | Nine ready-made layouts from 2 to 8 agents, or type your own. |
+| `ctrl+b` `↓`, type `name` | Every worker renames itself after its task, like `w1` -> `pr6969-cool-fix`. |
 | `ctrl+b` `↑` | Your projects: describe one once, then open its whole workspace in one keypress. |
 | `fleet up 6 2 claude,codex` | Six workers in two tabs, Claude and Codex taking turns. |
-| `fleet send`, `wait`, `read` | Hand out tasks, wait for the team, read each answer. |
+| `fleet send`, `wait`, `read` | Hand out tasks, wait for the team, read each answer. Each worker names itself after its task. |
 | `fleet clear all` | A fresh chat in every Claude and Codex worker. |
 | `fleet close all` | Every worker closed, nothing left behind. |
 
@@ -215,16 +217,20 @@ Press `ctrl+b` then `?` for every key, or keep the [interactive manual](https://
 | `fleet up 6 2 claude` | Six Claude workers in two tabs of three. |
 | `fleet up 4` | Four Claude workers in a 2x2 grid. |
 | `fleet up 6 2 claude,codex,agy` | Six workers that cycle claude, codex, agy. |
-| `fleet ls` | Every worker with its agent, status, tab and pane. |
-| `fleet send w2 "task"` | Type a task into worker 2. |
+| `fleet ls` | Every worker with its number, name, agent, status, tab and pane. |
+| `fleet send w2 "task"` | Type a task into worker 2. It also asks the worker to name itself after the task. |
 | `fleet send --wait all "task"` | Send to every worker and wait until all finish. |
 | `fleet wait all` | Wait until busy workers settle. |
 | `fleet read w2 120` | The last 120 lines from worker 2. |
 | `fleet clear all` | Fresh chat in every Claude and Codex worker. |
 | `fleet focus w3` | Jump to worker 3. |
 | `fleet close all` | Close every worker (asks first in a terminal). |
+| `fleet rename` | Every worker renames itself after its current task: pane, agent and session. |
+| `fleet rename w2 pr6969-cool-fix` | Give worker 2 that name yourself. |
+| `fleet rename me pr6969-cool-fix` | What an agent runs to name its own pane. |
 
-Targets are `w3` or `3`, a list like `w1,w4`, `all`, or `idle`.
+Targets are `w3` or `3`, a worker's name, a list like `w1,w4`, `all`, or `idle`.
+A renamed worker keeps its number, so `w2` and `pr6969-cool-fix` both reach it.
 Up to 12 workers per `fleet up`, and a second `fleet up` keeps counting from where you left off.
 The full story is in [Run many workers](docs/GUIDE.md#run-many-workers).
 
@@ -283,7 +289,7 @@ More fixes are in the guide's [Troubleshooting](docs/GUIDE.md#troubleshooting) s
 
 - [`install.sh`](install.sh): the one-line installer.
 - [`files/scripts/`](files/scripts/): `agent-tab.sh` (one tab, one command) and `fleet.sh` (builds and drives workers).
-- [`files/quick-actions/`](files/quick-actions/): the six Quick Actions.
+- [`files/quick-actions/`](files/quick-actions/): the seven Quick Actions.
 - [`files/worktrees/default.toml`](files/worktrees/default.toml): optional auto-layout for git worktrees.
 - [`files/extras/sync-agent-rules`](files/extras/sync-agent-rules): optional, keeps one rules file for every agent.
 - [`docs/index.html`](docs/index.html): the interactive manual, served by GitHub Pages.

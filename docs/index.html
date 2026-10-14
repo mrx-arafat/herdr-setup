@@ -405,7 +405,7 @@ sh install.sh</pre><button class="copy" type="button" data-copy="s-read">Copy</b
           <ol class="steps">
             <li>Checks that herdr 0.7.0 or newer, jq and curl are installed.</li>
             <li>Installs the herdr-plus plugin (<code class="i">herdr plugin install cloudmanic/herdr-plus</code>) after asking you. It asks on your terminal even when piped, and <code class="i">--yes</code> skips the question.</li>
-            <li>Downloads two scripts (<code class="i">agent-tab.sh</code>, <code class="i">fleet.sh</code>) and six Quick Actions from this repo into <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/</code>. It never overwrites a file that exists.</li>
+            <li>Downloads two scripts (<code class="i">agent-tab.sh</code>, <code class="i">fleet.sh</code>) and seven Quick Actions from this repo into <code class="i">~/.config/herdr/plugins/config/cloudmanic.herdr-plus/</code>. It never overwrites a file that exists.</li>
             <li>Links the <code class="i">fleet</code> command into <code class="i">~/.local/bin</code> when that folder is on your PATH, otherwise prints an alias line. It never replaces an existing <code class="i">fleet</code> command.</li>
             <li>Binds <code class="i">prefix+up</code> to Projects and <code class="i">prefix+down</code> to Quick Actions in <code class="i">~/.config/herdr/config.toml</code>, after a timestamped backup. It skips keys you already use.</li>
             <li>Reloads herdr and runs <code class="i">herdr config check</code>.</li>
@@ -560,8 +560,9 @@ fleet read w1 120</pre><button class="copy" type="button" data-copy="nextcmd">Co
           <ul class="rules">
             <li>Workers in one tab share a folder. Give them different files, or give each task its own worktree.</li>
             <li><code class="i">fleet send --wait all '...'</code> sends and blocks until every worker finishes.</li>
+            <li>Each task also asks the worker to name itself after it, so <code class="i">w2</code> becomes something like <code class="i">fix-flaky-orders</code>. <code class="i">w2</code> keeps working as a target.</li>
             <li>For a long answer, ask the worker to write a file and reply with its path.</li>
-            <li>Named agents work with plain herdr: <code class="i">herdr agent prompt my-app-w1 '...' --wait</code></li>
+            <li>Named agents work with plain herdr: <code class="i">herdr agent prompt my-app-w1 '...' --wait</code>. After a rename, use the new name.</li>
           </ul>
         </div>
       </div>
@@ -577,11 +578,18 @@ fleet read w1 120</pre><button class="copy" type="button" data-copy="nextcmd">Co
       <div class="actions">
         <div class="card act ok">
           <h3>See what is running <span class="badge ok">safe</span></h3>
-          <p>Workers with agent, status, tab and pane. The sidebar shows the same states for every workspace.</p>
+          <p>Workers with number, name, agent, status, tab and pane. The sidebar shows the same states for every workspace.</p>
           <div class="cmd"><pre id="m-ls">fleet ls
 fleet focus w3
 herdr agent list</pre><button class="copy" type="button" data-copy="m-ls">Copy</button></div>
           <p class="note">Jump anywhere: <kbd>ctrl</kbd>+<kbd>b</kbd> <kbd>g</kbd>, or <kbd>&#8984;P</kbd> in the Herdr app.</p>
+        </div>
+        <div class="card act ok">
+          <h3>Name workers after their work <span class="badge ok">safe</span></h3>
+          <p>Each worker renames its pane, its herdr agent and its own session after its task, like <code class="i">w1</code> &rarr; <code class="i">pr6969-cool-fix</code>. <code class="i">fleet send</code> asks for this with every task. A renamed worker keeps its number, so <code class="i">w1</code> still reaches it.</p>
+          <div class="cmd"><pre id="m-name">fleet rename
+fleet rename w2 pr6969-cool-fix</pre><button class="copy" type="button" data-copy="m-name">Copy</button></div>
+          <p class="note">Or type <code class="i">name</code> in Quick Actions. Set <code class="i">FLEET_AUTONAME=0</code> to send tasks exactly as typed.</p>
         </div>
         <div class="card act warnc">
           <h3>Reset memory <span class="badge warn">loses context</span></h3>
@@ -647,6 +655,7 @@ herdr worktree list</pre><button class="copy" type="button" data-copy="m-wt">Cop
             <tr><td class="m">grid</td><td>Agent Grid 2x2</td><td>Workers w1 claude, w2 codex, w3 agy, w4 shell</td></tr>
             <tr><td class="m">workers</td><td>Workers</td><td>One of nine layouts, 2 to 8 workers</td></tr>
             <tr><td class="m">workers</td><td>Workers (custom)</td><td>Type a layout, for example <code class="i">6 2 claude,codex</code></td></tr>
+            <tr><td class="m">name</td><td>Name workers</td><td>Every worker renames itself after its task: <code class="i">fleet rename</code></td></tr>
           </tbody>
         </table></div>
         <p class="note">Codex has no <code class="i">--dangerously-skip-sandbox</code> flag. The entry keeps that name and runs the real flag.</p>
@@ -857,11 +866,14 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
             <tr><td>Real Claude workers: <code class="i">fleet up</code> returns when they are ready, and <code class="i">send</code> and <code class="i">wait</code> return the replies</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td><code class="i">fleet clear</code> resets context to <code class="i">0 tokens</code>. <code class="i">fleet close</code> removes workers</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>The Workers presets and Workers (custom) launch from the picker</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td>Real Claude, Codex and Agy workers rename their pane, agent and session after their task, mid-task too, and keep their number</td><td><span class="status pass">Pass</span></td></tr>
+            <tr><td><code class="i">fleet rename me</code> refuses inside Codex, whose commands carry another pane's <code class="i">HERDR_PANE_ID</code></td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>Installer sandbox suite</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>All scripts pass shellcheck</td><td><span class="status pass">Pass</span></td></tr>
             <tr><td>Linux and Windows</td><td><span class="status open">Not run</span></td></tr>
             <tr><td>Physical key presses (they were driven through herdr's CLI instead)</td><td><span class="status open">Not run</span></td></tr>
             <tr><td>Agy's approval banner, and an Agy clear command</td><td><span class="status open">Not run</span></td></tr>
+            <tr><td>A renamed worker's number across a real herdr server restart</td><td><span class="status open">Not run</span></td></tr>
           </tbody>
         </table></div>
       </div>
@@ -1096,7 +1108,7 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
     var target = whos.indexOf('all') >= 0 ? 'all' : whos.join(',');
     if (wait) { out.push('fleet wait ' + target); whos.forEach(function (w) { out.push('fleet read ' + w + ' ' + lines); }); }
     $('#dscript').textContent = out.join('\n');
-    var p = ['You are running inside herdr. Use the fleet command in this workspace to delegate. Workers are panes labelled w1, w2 and so on.', '', 'Tasks:'];
+    var p = ['You are running inside herdr. Use the fleet command in this workspace to delegate. Workers start as panes labelled w1, w2 and so on and rename themselves after their tasks; w1 still reaches a renamed worker.', '', 'Tasks:'];
     live.forEach(function (t) { p.push('- ' + t.who + ': ' + t.text.trim()); });
     p.push('', 'Steps:', '1. Run fleet ls and check that every target worker exists and is idle.', "2. Send each task with fleet send <worker> '<task>'.");
     if (wait) p.push('3. Run fleet wait ' + target + ', then fleet read <worker> ' + lines + ' for each worker.', '4. Summarize what each worker did, what changed, and anything that failed or needs my decision.');
@@ -1174,7 +1186,7 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
     ['fleet up 6 2 claude', 'Six Claude workers, two tabs of three'],
     ['fleet up 4 1 claude,codex', 'Four mixed workers in a 2x2'],
     ['FLEET_CLAUDE_ARGS="" fleet up 4', 'Claude workers that keep their prompts'],
-    ['fleet ls', 'List workers with agent and status'],
+    ['fleet ls', 'List workers with number, name, agent and status'],
     ["fleet send w2 'task'", 'Give worker 2 a task'],
     ["fleet send --wait all 'task'", 'Task to every worker, wait for all'],
     ['fleet wait all', 'Wait until busy workers settle'],
@@ -1183,6 +1195,10 @@ fleet ls</pre><button class="copy" type="button" data-copy="h-check">Copy</butto
     ['fleet focus w3', 'Jump to worker 3'],
     ['fleet close w3', 'Close worker 3'],
     ['fleet close all', 'Close every worker, asks first'],
+    ['fleet rename', 'Every worker names itself after its task'],
+    ['fleet rename w2 pr6969-cool-fix', 'Name worker 2: pane, agent and session'],
+    ['fleet rename me pr6969-cool-fix', 'Name the pane you run in'],
+    ["FLEET_AUTONAME=0 fleet send w2 'task'", 'Send a task without the naming request'],
     ['fleet help', 'All fleet commands and settings'],
     ['herdr agent list', 'Every agent in every workspace'],
     ["herdr agent prompt my-app-w1 'task' --wait", 'Prompt a named agent and wait'],
